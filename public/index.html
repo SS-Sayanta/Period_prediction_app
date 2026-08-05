@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FemCare AI — Enterprise HealthTech Platform (React + Vercel)</title>
+  <meta name="description" content="Real-time ML cycle forecasting, ovulation windows, and reproductive health markers.">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- marked.js for Markdown rendering in chat -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- React 18 & ReactDOM CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel Standalone JSX Transpiler -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              pink: '#F472B6',
+              rose: '#E11D48',
+              purple: '#A78BFA',
+              teal: '#2DD4BF',
+              dark: '#0F172A',
+              card: '#1E293B'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0F172A;
+      color: #F8FAFC;
+      font-family: 'Inter', sans-serif;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+    }
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(244, 114, 182, 0.15) 0%, rgba(167, 139, 250, 0.15) 50%, rgba(45, 212, 191, 0.15) 100%);
+      border: 1px solid rgba(244, 114, 182, 0.25);
+    }
+    @keyframes slideUpFade {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(50px) scale(0.9); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    .animate-slide-up {
+      animation: slideUpFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .animate-toast-in {
+      animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .ml-result-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border: 1px solid rgba(244, 114, 182, 0.35);
+      box-shadow: 0 10px 30px -10px rgba(244, 114, 182, 0.25);
+    }
+
+    /* ── Chat Widget Styles ──────────────────────────────────── */
+    .chat-scrollbox {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(244,114,182,0.35) transparent;
+    }
+    .chat-scrollbox::-webkit-scrollbar { width: 4px; }
+    .chat-scrollbox::-webkit-scrollbar-track { background: transparent; }
+    .chat-scrollbox::-webkit-scrollbar-thumb {
+      background: rgba(244,114,182,0.4);
+      border-radius: 99px;
+    }
+
+    /* User bubble */
+    .bubble-user {
+      background: linear-gradient(135deg, #be185d 0%, #9333ea 100%);
+      color: #fff;
+      border-radius: 18px 18px 4px 18px;
+      padding: 9px 13px;
+      font-size: 12px;
+      line-height: 1.55;
+      max-width: 88%;
+      box-shadow: 0 4px 16px -4px rgba(190,24,93,0.45);
+      word-break: break-word;
+    }
+
+    /* AI bubble */
+    .bubble-ai {
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(244,114,182,0.2);
+      border-radius: 18px 18px 18px 4px;
+      padding: 10px 13px;
+      font-size: 12px;
+      line-height: 1.65;
+      max-width: 92%;
+      color: #e2e8f0;
+      word-break: break-word;
+    }
+    /* Markdown inside AI bubble */
+    .bubble-ai p   { margin: 0 0 6px; }
+    .bubble-ai p:last-child { margin-bottom: 0; }
+    .bubble-ai ul  { margin: 4px 0 6px 16px; list-style: disc; }
+    .bubble-ai ol  { margin: 4px 0 6px 18px; list-style: decimal; }
+    .bubble-ai li  { margin-bottom: 3px; }
+    .bubble-ai strong { color: #f9a8d4; font-weight: 600; }
+    .bubble-ai em  { color: #94a3b8; }
+    .bubble-ai code {
+      background: rgba(244,114,182,0.12);
+      border: 1px solid rgba(244,114,182,0.2);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 11px;
+      font-family: monospace;
+      color: #f9a8d4;
+    }
+    .bubble-ai pre {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(244,114,182,0.15);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 6px 0;
+      overflow-x: auto;
+      font-size: 11px;
+    }
+    .bubble-ai h1,.bubble-ai h2,.bubble-ai h3 {
+      color: #f9a8d4;
+      font-weight: 700;
+      margin: 6px 0 4px;
+    }
+
+    /* Typing dots */
+    @keyframes typingBounce {
+      0%,60%,100% { transform: translateY(0); opacity: 0.4; }
+      30%          { transform: translateY(-5px); opacity: 1; }
+    }
+    .typing-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #f472b6;
+      display: inline-block;
+      animation: typingBounce 1.2s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* Quick-prompt chips */
+    .chip {
+      background: rgba(30,41,59,0.7);
+      border: 1px solid rgba(244,114,182,0.25);
+      backdrop-filter: blur(8px);
+      border-radius: 10px;
+      padding: 6px 9px;
+      font-size: 10.5px;
+      font-weight: 500;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      width: 100%;
+    }
+    .chip:hover {
+      background: rgba(244,114,182,0.15);
+      border-color: rgba(244,114,182,0.55);
+      color: #f9a8d4;
+      box-shadow: 0 0 14px -4px rgba(244,114,182,0.4);
+      transform: translateY(-1px);
+    }
+
+    /* Chat input */
+    .chat-input {
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(100,116,139,0.4);
+      border-radius: 12px;
+      padding: 8px 11px;
+      font-size: 12px;
+      color: #e2e8f0;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus { border-color: #f472b6; }
+    .chat-input::placeholder { color: #475569; }
+
+    /* ── Global Responsive Reset & Overflow Prevention ────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    html, body, #root {
+      overflow-x: hidden;
+      max-width: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    img, video, iframe, canvas, svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* ── Sidebar responsive ──────────────────────────────────── */
+    .sidebar {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.97);
+      border-right: none;
+      border-bottom: 1px solid rgba(51,65,85,1);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-shrink: 0;
+      transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), padding 0.2s;
+      overflow: hidden;
+    }
+    .sidebar.collapsed { max-height: 60px; padding-top: 10px; padding-bottom: 10px; }
+    .sidebar.expanded  { max-height: min(100vh, 100dvh); overflow-y: auto; }
+    @media (min-width: 768px) {
+      .sidebar {
+        width: 300px;
+        min-width: 260px;
+        max-width: 320px;
+        max-height: none !important;
+        border-right: 1px solid rgba(51,65,85,1);
+        border-bottom: none;
+        padding: 20px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(244,114,182,0.25) transparent;
+      }
+      .sidebar-toggle-btn { display: none !important; }
+      .sidebar-inner { display: flex !important; }
+    }
+    .sidebar-inner { display: flex; flex-direction: column; gap: 0; }
+    @media (max-width: 767px) {
+      .sidebar.collapsed .sidebar-inner { display: none; }
+      .sidebar.expanded  .sidebar-inner { display: flex; }
+    }
+
+    /* ── Hamburger button ────────────────────────────────────── */
+    .sidebar-toggle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      color: #f9a8d4;
+    }
+    .hamburger-icon {
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .hamburger-icon span {
+      display: block; width: 20px; height: 2px;
+      background: #f472b6; border-radius: 2px;
+      transition: all 0.2s;
+    }
+
+    /* ── Chat box dvh-aware heights ──────────────────────────── */
+    .chat-msg-box {
+      min-height: 120px;
+      max-height: min(240px, 30dvh);
+      overflow-y: auto;
+    }
+    .chat-container { max-height: min(420px, 60dvh); }
+    @media (max-width: 767px) {
+      .chat-msg-box   { max-height: min(200px, 28dvh); }
+      .chat-container { max-height: min(380px, 55dvh); }
+    }
+
+    /* ── Chip grid: wrap neatly on mobile screens ───────────── */
+    .chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip-grid > button {
+      flex: 1 1 calc(50% - 6px);
+      min-width: 110px;
+    }
+    @media (max-width: 400px) {
+      .chip-grid > button {
+        flex: 1 1 100%;
+      }
+    }
+
+    /* ── Metric cards responsive grid ───────────────────────── */
+    .metric-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(2, 1fr);
+    }
+    @media (min-width: 1024px) {
+      .metric-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .metric-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Main content area ───────────────────────────────────── */
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      max-width: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    @media (min-width: 768px)  { .main-content { padding: 24px; } }
+    @media (min-width: 1024px) { .main-content { padding: 32px; } }
+
+    /* ── Input fields full-width safety ──────────────────────── */
+    input, select, textarea {
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* ── Form grid (prediction inputs) ──────────────────────── */
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .form-grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Calendar day cells ──────────────────────────────────── */
+    @media (max-width: 480px) {
+      .cal-day { min-height: 52px !important; padding: 3px !important; font-size: 10px; }
+    }
+
+    /* ── Toast position on mobile ────────────────────────────── */
+    @media (max-width: 640px) {
+      .toast-wrap { bottom: 12px !important; right: 12px !important; left: 12px !important; }
+      .toast-wrap > div { width: 100%; }
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-pink-500 selection:text-white">
+  <div id="root"></div>
+
+  <!-- REACT APPLICATION SOURCE -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const formatDateStr = (dateStr) => {
+      if (!dateStr) return '---';
+      try {
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const d = parseInt(parts[2], 10);
+        const dt = new Date(y, m, d);
+        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      } catch (e) {
+        return dateStr;
+      }
+    };
+
+    const TRANSLATIONS = {
+      en: {
+        appName: "FemCare AI",
+        appSubtitle: "ENTERPRISE REACT EDITION",
+        langSelect: "🌐 Language",
+        modeCycle: "🌸 Cycle Tracking",
+        modePregnancy: "🤰 Pregnancy Mode",
+        modePCOS: "🔬 PCOS / Irregular Tracking",
+        navOverview: "Overview & Prediction",
+        navForecast: "Multi-Cycle Forecast",
+        navCalendar: "Interactive Calendar",
+        navAnalytics: "Health Analytics",
+        navQuickLog: "Quick-Log & Feedback",
+        navExport: "Dataset & Medical Export",
+        askAI: "Ask FemCare AI Companion",
+        metricDaysUntilPeriod: "DAYS UNTIL PERIOD",
+        metricPredictedOvulation: "PREDICTED OVULATION",
+        metricForecastCycleLength: "FORECAST CYCLE LENGTH",
+        metricCurrentPhase: "CURRENT PHASE",
+        metricDays: "Days",
+        metricExpected: "Expected",
+        metricFertile: "Fertile",
+        metricConfidence: "Confidence",
+        inputCalibrationTitle: "Dynamic ML Input & Calibration",
+        baselineTitle: "Baseline Dates & Demographics",
+        lastPeriodDate: "Last Period Start Date",
+        ageYears: "Age (Years)",
+        historicalDurationTitle: "Historical Cycle Duration",
+        lastCycleDuration: "Last Cycle Duration (Days)",
+        secondLastCycleDuration: "2nd Last Cycle Duration (Days)",
+        lifestyleMarkersTitle: "Lifestyle Markers",
+        stressLevel: "Stress Level (1-5)",
+        runForecastBtn: "⚡ Run Real-Time ML Forecast",
+        calculatingForecast: "Calculating Real-Time ML Forecast...",
+        mlResultTitle: "✓ ML Forecast Successfully Generated",
+        liveUpdated: "Live Updated",
+        daysUntilNextPeriod: "Days Until Next Period",
+        expectedDateRange: "Expected Date Range",
+        forecastCycleDuration: "Forecast Cycle Duration",
+        dynamicOvulationPhase: "Dynamic Ovulation Phase",
+        calendarTitle: "Interactive Reproductive Health Calendar",
+        calendarSub: "ML-driven daily biological phase map, fertile windows, and interactive day logging.",
+        prevBtn: "◄ Prev",
+        todayBtn: "Today",
+        nextBtn: "Next ►",
+        legendGuide: "Legend Guide:",
+        legendPeriod: "Period Days",
+        legendFertility: "High Fertility",
+        legendOvulation: "Ovulation Peak",
+        legendFollicular: "Follicular Phase",
+        legendLuteal: "Luteal Phase",
+        legendSymptoms: "Logged Symptoms",
+        badgePeriod: "🩸 Period",
+        badgeFertility: "🌿 High Fertility",
+        badgeOvulation: "⭐ Ovulation Peak",
+        badgeFollicular: "🌱 Follicular",
+        badgeLuteal: "🌾 Luteal",
+        badgeLogged: "📝 Logged",
+        cleanCalendarTitle: "Clean Uninitialized Calendar",
+        cleanCalendarDesc: "Please enter your cycle baseline dates under Overview & Prediction to calculate your personalized AI forecast.",
+        goOverviewBtn: "Go to Overview & Prediction",
+        activeMLForecastLoaded: "✓ Active ML Cycle Forecast Loaded",
+        resetCalendarBtn: "Reset Calendar / Clear Data",
+        bioDayDetails: "Biological Day Details",
+        currentPhase: "Current Phase",
+        conceptionProb: "Conception Probability",
+        healthRec: "Health Recommendation",
+        quickLogTitle: "Quick-Log Symptoms for",
+        flowLevel: "Flow Level",
+        crampsSeverity: "Cramps Severity",
+        saveSymptomBtn: "Save Symptom Log",
+        analyticsTitle: "Health Analytics & Model Accuracy",
+        quickLogFeedbackTitle: "Quick-Log Symptoms & User Feedback",
+        exportTitle: "Dataset & Medical Report Export",
+        exportPdfBtn: "📄 Download Clinical Summary PDF"
+      },
+      bn: {
+        appName: "ফেমকেয়ার AI",
+        appSubtitle: "এন্টারপ্রাইজ রিয়্যাক্ট সংস্করণ",
+        langSelect: "🌐 ভাষা",
+        modeCycle: "🌸 পিরিয়ড ট্র্যাকিং",
+        modePregnancy: "🤰 গর্ভাবস্থা মোড",
+        modePCOS: "🔬 PCOS / অনিয়মিত ট্র্যাকিং",
+        navOverview: "ওভারভিউ ও পূর্বানুমান",
+        navForecast: "মাল্টি-সাইকেল পূর্বাভাস",
+        navCalendar: "ইন্টারেক্টিভ ক্যালেন্ডার",
+        navAnalytics: "স্বাস্থ্য অ্যানালিটিক্স",
+        navQuickLog: "কুইক-লগ ও মতামত",
+        navExport: "ডেটাবেস ও মেডিকেল এক্সপোর্ট",
+        askAI: "ফেমকেয়ার AI সহকারীকে জিজ্ঞাসা করুন",
+        metricDaysUntilPeriod: "পিরিয়ডের বাকি দিন",
+        metricPredictedOvulation: "আনুমানিক ওভিউলেশন",
+        metricForecastCycleLength: "সাইকেল দৈর্ঘ্য পূর্বানুমান",
+        metricCurrentPhase: "বর্তমান পর্যায়",
+        metricDays: "দিন",
+        metricExpected: "প্রত্যাশিত",
+        metricFertile: "উর্বর",
+        metricConfidence: "নির্ভরযোগ্যতা",
+        inputCalibrationTitle: "ডায়নামিক ML ইনপুট ও ক্যালিব্রেশন",
+        baselineTitle: "বেসলাইন তারিখ ও বয়স",
+        lastPeriodDate: "শেষ পিরিয়ড শুরুর তারিখ",
+        ageYears: "বয়স (বছর)",
+        historicalDurationTitle: "পূর্ববর্তী সাইকেল দৈর্ঘ্য",
+        lastCycleDuration: "শেষ সাইকেল দৈর্ঘ্য (দিন)",
+        secondLastCycleDuration: "২য় শেষ সাইকেল দৈর্ঘ্য (দিন)",
+        lifestyleMarkersTitle: "লাইফস্টাইল নির্দেশক",
+        stressLevel: "মানসিক চাপ (১-৫)",
+        runForecastBtn: "⚡ রিয়েল-টাইম ML পূর্বাভাস চালান",
+        calculatingForecast: "ML পূর্বাভাস গণনা করা হচ্ছে...",
+        mlResultTitle: "✓ ML পূর্বাভাস সফলভাবে তৈরি হয়েছে",
+        liveUpdated: "লাইভ আপডেট",
+        daysUntilNextPeriod: "পরবর্তী পিরিয়ডের বাকি দিন",
+        expectedDateRange: "প্রত্যাশিত তারিখের ব্যাপ্তি",
+        forecastCycleDuration: "পূর্বানুমানিত সাইকেলের সময়কাল",
+        dynamicOvulationPhase: "ডায়নামিক ওভিউলেশন পর্যায়",
+        calendarTitle: "ইন্টারেক্টিভ রিপ্রোডাক্টিভ হেলথ ক্যালেন্ডার",
+        calendarSub: "ML-চালিত দৈনিক বায়োলজিক্যাল ফেজ ম্যাপ, উর্বর সময় ও ইন্টারেক্টিভ লগিং।",
+        prevBtn: "◄ পূর্ববর্তী",
+        todayBtn: "আজ",
+        nextBtn: "পরবর্তী ►",
+        legendGuide: "নির্দেশিকা:",
+        legendPeriod: "পিরিয়ডের দিন",
+        legendFertility: "উচ্চ উর্বরতা",
+        legendOvulation: "ওভিউলেশন পিক",
+        legendFollicular: "ফলিকুলার ফেজ",
+        legendLuteal: "লুটিয়াল ফেজ",
+        legendSymptoms: "লগ করা লক্ষণ",
+        badgePeriod: "🩸 পিরিয়ড",
+        badgeFertility: "🌿 উচ্চ উর্বরতা",
+        badgeOvulation: "⭐ ওভিউলেশন পিক",
+        badgeFollicular: "🌱 ফলিকুলার",
+        badgeLuteal: "🌾 লুটিয়াল",
+        badgeLogged: "📝 লগ করা হয়েছে",
+        cleanCalendarTitle: "অপ্রস্তুত পরিষ্কার ক্যালেন্ডার",
+        cleanCalendarDesc: "আপনার ব্যক্তিগতকৃত AI পূর্বাভাস পেতে অনুগ্রহ করে ওভারভিউ ও পূর্বাভাস ট্যাবে তথ্য দিন।",
+        goOverviewBtn: "ওভারভিউ ও পূর্বাভাসে যান",
+        activeMLForecastLoaded: "✓ সক্রিয় ML সাইকেল পূর্বাভাস লোড করা হয়েছে",
+        resetCalendarBtn: "ক্যালেন্ডার রিসেট / ডেটা মুছুন",
+        bioDayDetails: "বায়োলজিক্যাল দিনের বিবরণ",
+        currentPhase: "বর্তমান পর্যায়",
+        conceptionProb: "গর্ভধারণের সম্ভাবনা",
+        healthRec: "স্বাস্থ্য পরামর্শ",
+        quickLogTitle: "লক্ষণ দ্রুত রেকর্ড করুন",
+        flowLevel: "ফ্লো লেভেল",
+        crampsSeverity: "ক্র্যাম্প তীব্রতা",
+        saveSymptomBtn: "লক্ষণ সংরক্ষণ করুন",
+        analyticsTitle: "স্বাস্থ্য অ্যানালিটিক্স ও মডেল নির্ভরতা",
+        quickLogFeedbackTitle: "লক্ষণ লগিং ও ব্যবহারকারীর প্রতিক্রিয়া",
+        exportTitle: "ডেটাবেস ও ডক্টর রিপোর্ট এক্সপোর্ট",
+        exportPdfBtn: "📄 ক্লিনিক্যাল রিপোর্ট PDF ডাউনলোড করুন"
+      },
+      hi: {
+        appName: "फेमकेयर AI",
+        appSubtitle: "एंटरप्राइज रिएक्ट संस्करण",
+        langSelect: "🌐 भाषा",
+        modeCycle: "🌸 चक्र ट्रैकिंग",
+        modePregnancy: "🤰 गर्भावस्था मोड",
+        modePCOS: "🔬 PCOS / अनियंत्रित ट्रैकिंग",
+        navOverview: "ओवरव्यू और पूर्वानुमान",
+        navForecast: "मल्टी-साइकिल पूर्वानुमान",
+        navCalendar: "इंटरएक्टिव कैलेंडर",
+        navAnalytics: "स्वास्थ्य एनालिटिक्स",
+        navQuickLog: "क्विक-लॉग और प्रतिक्रिया",
+        navExport: "डेटासेट और मेडिकल एक्सपोर्ट",
+        askAI: "फेमकेयर AI सहायक से पूछें",
+        metricDaysUntilPeriod: "पीरियड के शेष दिन",
+        metricPredictedOvulation: "अनुमानित ओव्यूलेशन",
+        metricForecastCycleLength: "पूर्वानुमानित चक्र अवधि",
+        metricCurrentPhase: "वर्तमान चरण",
+        metricDays: "दिन",
+        metricExpected: "अपेक्षित",
+        metricFertile: "उर्वर",
+        metricConfidence: "विश्वसनीयता",
+        inputCalibrationTitle: "डायनामिक ML इनपुट और कैलिब्रेशन",
+        baselineTitle: "बेसलाइन तिथियां और जनसांख्यिकी",
+        lastPeriodDate: "अंतिम पीरियड प्रारंभ तिथि",
+        ageYears: "आयु (वर्ष)",
+        historicalDurationTitle: "ऐतिहासिक चक्र अवधि",
+        lastCycleDuration: "अंतिम चक्र की अवधि (दिन)",
+        secondLastCycleDuration: "दूसरी अंतिम चक्र की अवधि (दिन)",
+        lifestyleMarkersTitle: "जीवनशैली संकेतक",
+        stressLevel: "तनाव का स्तर (1-5)",
+        runForecastBtn: "⚡ रियल-टाइम ML पूर्वानुमान चलाएं",
+        calculatingForecast: "ML पूर्वानुमान की गणना की जा रही है...",
+        mlResultTitle: "✓ ML पूर्वानुमान सफलतापूर्वक जनरेट हुआ",
+        liveUpdated: "लाइव अपडेटेड",
+        daysUntilNextPeriod: "अगले पीरियड के शेष दिन",
+        expectedDateRange: "अपेक्षित तिथि सीमा",
+        forecastCycleDuration: "पूर्वानुमानित चक्र अवधि",
+        dynamicOvulationPhase: "डायनामिक ओव्यूलेशन चरण",
+        calendarTitle: "इंटरएक्टिव रीप्रोडक्टिव हेल्थ कैलेंडर",
+        calendarSub: "ML-आधारित दैनिक जैविक चरण मानचित्र, उर्वर अवधि और इंटरएक्टिव लॉगिंग।",
+        prevBtn: "◄ पिछला",
+        todayBtn: "आज",
+        nextBtn: "अगला ►",
+        legendGuide: "गाइड गाइड:",
+        legendPeriod: "पीरियड के दिन",
+        legendFertility: "उच्च उर्वरता",
+        legendOvulation: "ओव्यूलेशन पीक",
+        legendFollicular: "फॉलिक्युलर चरण",
+        legendLuteal: "ल्यूटियल चरण",
+        legendSymptoms: "दर्ज लक्षण",
+        badgePeriod: "🩸 पीरियड",
+        badgeFertility: "🌿 उच्च उर्वरता",
+        badgeOvulation: "⭐ ओव्यूलेशन पीक",
+        badgeFollicular: "🌱 फॉलिक्युलर",
+        badgeLuteal: "🌾 ल्यूटियल",
+        badgeLogged: "📝 दर्ज किया गया",
+        cleanCalendarTitle: "प्रारंभिक स्वच्छ कैलेंडर",
+        cleanCalendarDesc: "अपना व्यक्तिगत AI पूर्वानुमान प्राप्त करने के लिए कृपया ओवरव्यू और पूर्वानुमान में तिथियां दर्ज करें।",
+        goOverviewBtn: "ओवरव्यू और पूर्वानुमान पर जाएं",
+        activeMLForecastLoaded: "✓ सक्रिय ML चक्र पूर्वानुमान लोड किया गया",
+        resetCalendarBtn: "कैलेंडर रीसेट / डेटा साफ़ करें",
+        bioDayDetails: "जैविक दिन का विवरण",
+        currentPhase: "वर्तमान चरण",
+        conceptionProb: "गर्भधारण की संभावना",
+        healthRec: "स्वास्थ्य परामर्श",
+        quickLogTitle: "के लिए लक्षण तुरंत दर्ज करें",
+        flowLevel: "प्रवाह का स्तर",
+        crampsSeverity: "ऐंठन की तीव्रता",
+        saveSymptomBtn: "लक्षण सहेजें",
+        analyticsTitle: "स्वास्थ्य एनालिटिक्स और मॉडल सटीकता",
+        quickLogFeedbackTitle: "लक्षण लॉगिंग और उपयोगकर्ता फीडबैक",
+        exportTitle: "डेटासेट और मेडिकल रिपोर्ट एक्सपोर्ट",
+        exportPdfBtn: "📄 क्लिनिकल सारांश PDF डाउनलोड करें"
+      }
+    };
+
+    function App() {
+      const resultCardRef = React.useRef(null);
+      const [currentLang, setCurrentLang] = useState(() => {
+        return localStorage.getItem('femcare_lang') || 'en';
+      });
+
+      const changeLanguage = (lang) => {
+        setCurrentLang(lang);
+        localStorage.setItem('femcare_lang', lang);
+      };
+
+      const t = (key) => {
+        return (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) ||
+               (TRANSLATIONS['en'] && TRANSLATIONS['en'][key]) ||
+               key;
+      };
+      const [activeTab, setActiveTab] = useState('overview');
+      const [operatingMode, setOperatingMode] = useState('🌸 Cycle Tracking');
+      const [overviewData, setOverviewData] = useState(null);
+      const [analyticsData, setAnalyticsData] = useState(null);
+      const [calendarData, setCalendarData] = useState(null);
+      const [calYear, setCalYear] = useState(new Date().getFullYear());
+      const [calMonth, setCalMonth] = useState(new Date().getMonth() + 1);
+      
+      const [assistantQuery, setAssistantQuery] = useState('');
+      const [assistantResponse, setAssistantResponse] = useState('');
+      const [assistantOpen, setAssistantOpen] = useState(false);
+
+      // Loading & Feedback Toast States
+      const [toast, setToast] = useState(null);
+      const [isPredicting, setIsPredicting] = useState(false);
+      const [isLoggingSymptom, setIsLoggingSymptom] = useState(false);
+      const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+      const [lastPredictionResult, setLastPredictionResult] = useState(null);
+
+      // Conditional Active ML Calendar State
+      const [isCalculated, setIsCalculated] = useState(() => {
+        return localStorage.getItem('femcare_is_calculated') === 'true';
+      });
+
+      // Interactive Calendar Day Selection Modal State
+      const [selectedDay, setSelectedDay] = useState(null);
+      const [daySymptomForm, setDaySymptomForm] = useState({ flow_level: 'None', cramps: 0, notes: '' });
+      const [isSavingDaySymptom, setIsSavingDaySymptom] = useState(false);
+
+      const handleResetCalendar = () => {
+        localStorage.removeItem('femcare_is_calculated');
+        setIsCalculated(false);
+        showToast('ℹ️ Calendar reset to clean uninitialized state.', 'info');
+      };
+
+      const [formData, setFormData] = useState({
+        last_period_date: new Date().toISOString().split('T')[0],
+        age: 25,
+        weight_kg: 60.0,
+        last_cycle_length: 28.0,
+        cycle_length_2: 28.0,
+        cycle_length_3: 28.0,
+        stress_level: 3,
+        avg_sleep_hours: 7.5,
+        exercise_hours: 3.0,
+        water_intake_liters: 2.0
+      });
+
+      const [symptomForm, setSymptomForm] = useState({
+        log_date: new Date().toISOString().split('T')[0],
+        flow_level: 'None',
+        cramps: 1,
+        fatigue: 1,
+        notes: ''
+      });
+
+      const [feedbackForm, setFeedbackForm] = useState({
+        feedback_date: new Date().toISOString().split('T')[0],
+        actual_cycle_length: 28.0
+      });
+
+      useEffect(() => {
+        fetchOverview();
+      }, []);
+
+      useEffect(() => {
+        if (activeTab === 'calendar') fetchCalendar();
+        if (activeTab === 'analytics') fetchAnalytics();
+      }, [activeTab, calYear, calMonth]);
+
+      const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => {
+          setToast(prev => (prev && prev.message === message ? null : prev));
+        }, 4000);
+      };
+
+      const fetchOverview = async () => {
+        try {
+          const res = await fetch('/api/prediction/overview');
+          const data = await res.json();
+          setOverviewData(data);
+        } catch (err) {
+          console.error("Error fetching overview", err);
+        }
+      };
+
+      const fetchCalendar = async () => {
+        try {
+          const pDate = formData.last_period_date || (overviewData && overviewData.feature_summary ? overviewData.feature_summary.last_period_date : new Date().toISOString().split('T')[0]);
+          const cycleLen = overviewData ? overviewData.predicted_cycle_days : formData.last_cycle_length;
+          const res = await fetch(`/api/calendar/events?year=${calYear}&month=${calMonth}&last_period_date=${pDate}&cycle_days=${cycleLen}`);
+          if (!res.ok) throw new Error('Calendar API response error');
+          const data = await res.json();
+          setCalendarData(data);
+        } catch (err) {
+          console.error("Error fetching calendar", err);
+        }
+      };
+
+      const fetchAnalytics = async () => {
+        try {
+          const res = await fetch('/api/analytics');
+          const data = await res.json();
+          setAnalyticsData(data);
+        } catch (err) {
+          console.error("Error fetching analytics", err);
+        }
+      };
+
+      const handleRunPrediction = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        setIsPredicting(true);
+        try {
+          const res = await fetch('/api/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          if (!res.ok) throw new Error('Prediction API Error');
+          const data = await res.json();
+          setOverviewData(data);
+          setLastPredictionResult(data);
+          localStorage.setItem('femcare_is_calculated', 'true');
+          setIsCalculated(true);
+          showToast('✓ ML Forecast Successfully Generated', 'success');
+
+          setTimeout(() => {
+            if (resultCardRef.current) {
+              resultCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 150);
+        } catch (err) {
+          console.error("Prediction error", err);
+          showToast('❌ Error updating forecast prediction', 'error');
+        } finally {
+          setIsPredicting(false);
+        }
+      };
+
+      const handleLogSymptoms = async (e) => {
+        e.preventDefault();
+        setIsLoggingSymptom(true);
+        try {
+          const res = await fetch('/api/symptoms/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(symptomForm)
+          });
+          if (res.ok) {
+            showToast('✓ Daily symptom log saved successfully!', 'success');
+            if (activeTab === 'calendar') fetchCalendar();
+          } else {
+            throw new Error('Log failed');
+          }
+        } catch (err) {
+          showToast('❌ Error logging symptoms', 'error');
+        } finally {
+          setIsLoggingSymptom(false);
+        }
+      };
+
+      const handleSubmitFeedback = async (e) => {
+        e.preventDefault();
+        setIsSubmittingFeedback(true);
+        try {
+          const res = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(feedbackForm)
+          });
+          if (res.ok) {
+            showToast('✓ Ground truth period verified! Predictions recalibrated.', 'success');
+            fetchOverview();
+            if (activeTab === 'calendar') fetchCalendar();
+          } else {
+            throw new Error('Feedback failed');
+          }
+        } catch (err) {
+          showToast('❌ Error submitting feedback', 'error');
+        } finally {
+          setIsSubmittingFeedback(false);
+        }
+      };
+
+      const [sidebarOpen, setSidebarOpen] = useState(false);
+      const [isAssistantLoading, setIsAssistantLoading] = useState(false);
+      const [chatMessages, setChatMessages] = useState([]);
+      const chatEndRef = React.useRef(null);
+
+      // Auto-scroll to latest message
+      useEffect(() => {
+        if (chatEndRef.current) {
+          chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, [chatMessages, isAssistantLoading]);
+
+      const handleAssistantQuery = async (queryText) => {
+        const q = (queryText || assistantQuery).trim();
+        if (!q) return;
+        setAssistantQuery('');
+
+        // Push user message immediately
+        setChatMessages(prev => [...prev, { role: 'user', text: q }]);
+        setIsAssistantLoading(true);
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: q,
+              current_phase: overviewData ? overviewData.current_phase : 'Follicular',
+              operating_mode: operatingMode,
+              age: formData.age,
+              stress_level: formData.stress_level
+            })
+          });
+          const data = await res.json();
+          const reply = data.response || data.answer || '❌ No response received.';
+          setChatMessages(prev => [...prev, { role: 'ai', text: reply }]);
+        } catch (err) {
+          setChatMessages(prev => [...prev, { role: 'ai', text: '❌ Failed to reach AI. Please check your connection.' }]);
+        } finally {
+          setIsAssistantLoading(false);
+        }
+      };
+
+      // Calendar Navigation & Interactive Day Select Handlers
+      const handlePrevMonth = () => {
+        if (calMonth === 1) {
+          setCalMonth(12);
+          setCalYear(calYear - 1);
+        } else {
+          setCalMonth(calMonth - 1);
+        }
+      };
+
+      const handleNextMonth = () => {
+        if (calMonth === 12) {
+          setCalMonth(1);
+          setCalYear(calYear + 1);
+        } else {
+          setCalMonth(calMonth + 1);
+        }
+      };
+
+      const handleCurrentMonth = () => {
+        const now = new Date();
+        setCalYear(now.getFullYear());
+        setCalMonth(now.getMonth() + 1);
+      };
+
+      const handleSelectDay = (day) => {
+        setSelectedDay(day);
+        setDaySymptomForm({
+          flow_level: day.symptom_detail ? day.symptom_detail.flow : 'None',
+          cramps: day.symptom_detail ? day.symptom_detail.cramps : 0,
+          notes: day.symptom_detail ? day.symptom_detail.notes : ''
+        });
+      };
+
+      const handleSaveDaySymptom = async (e) => {
+        e.preventDefault();
+        if (!selectedDay) return;
+        setIsSavingDaySymptom(true);
+        try {
+          const res = await fetch('/api/symptoms/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              log_date: selectedDay.date,
+              flow_level: daySymptomForm.flow_level,
+              cramps: daySymptomForm.cramps,
+              notes: daySymptomForm.notes
+            })
+          });
+          if (res.ok) {
+            showToast(`✓ Symptom log saved for ${formatDateStr(selectedDay.date)}`, 'success');
+            setSelectedDay(null);
+            await fetchCalendar();
+            fetchOverview();
+          } else {
+            throw new Error('Save failed');
+          }
+        } catch (err) {
+          showToast('❌ Error saving day symptom log', 'error');
+        } finally {
+          setIsSavingDaySymptom(false);
+        }
+      };
+
+      const activeMLData = lastPredictionResult || overviewData;
+
+      // Safe markdown parser with plain-text fallback
+      const parseMarkdown = (text) => {
+        try {
+          if (typeof marked !== 'undefined' && marked.parse) {
+            return marked.parse(text);
+          }
+        } catch (e) { /* fall through */ }
+        // Fallback: escape HTML and preserve line breaks
+        return text
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\n/g, '<br>');
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col md:flex-row relative">
+          {/* FLOATING TOAST FEEDBACK BANNER */}
+          {toast && (
+            <div className="fixed bottom-6 right-6 z-50 animate-toast-in toast-wrap">
+              <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-xl border ${
+                toast.type === 'error'
+                  ? 'bg-slate-900/95 border-rose-500/50 text-rose-300'
+                  : 'bg-slate-900/95 border-emerald-500/50 text-emerald-300'
+              }`}>
+                <span className="text-base">{toast.type === 'error' ? '❌' : '✓'}</span>
+                <span className="text-xs font-semibold tracking-wide">{toast.message}</span>
+                <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-white text-xs font-bold focus:outline-none cursor-pointer">✕</button>
+              </div>
+            </div>
+          )}
+
+          {/* SIDEBAR */}
+          <aside className={`sidebar ${sidebarOpen ? 'expanded' : 'collapsed'}`}>
+
+            {/* Mobile Hamburger Header — hidden on md+ */}
+            <button className="sidebar-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🌸</span>
+                <div className="text-left">
+                  <span className="font-display text-base font-bold text-pink-400 leading-none block">{t('appName')}</span>
+                  <span className="text-[9px] tracking-widest text-slate-400 uppercase font-semibold">{t('appSubtitle')}</span>
+                </div>
+              </div>
+              <div className="hamburger-icon">
+                <span style={{transform: sidebarOpen ? 'rotate(45deg) translate(4px,4px)' : ''}}></span>
+                <span style={{opacity: sidebarOpen ? 0 : 1}}></span>
+                <span style={{transform: sidebarOpen ? 'rotate(-45deg) translate(4px,-4px)' : ''}}></span>
+              </div>
+            </button>
+
+            {/* Sidebar inner content */}
+            <div className="sidebar-inner">
+              <div className="space-y-4">
+                <div className="text-center py-2 pb-4 border-b border-slate-800 mb-4">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🌸</span>
+                      <div className="text-left">
+                        <h1 className="font-display text-lg font-bold text-pink-400 leading-none">{t('appName')}</h1>
+                        <p className="text-[9px] tracking-widest text-slate-400 uppercase font-semibold">{t('appSubtitle')}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between bg-slate-950/80 p-2 rounded-xl border border-pink-500/40">
+                    <span className="text-xs font-semibold text-pink-400">{t('langSelect')}:</span>
+                    <select value={currentLang} onChange={(e) => changeLanguage(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 font-semibold focus:outline-none focus:border-pink-500 cursor-pointer">
+                      <option value="en">🌐 English</option>
+                      <option value="bn">🌐 বাংলা (Bengali)</option>
+                      <option value="hi">🌐 हिंदी (Hindi)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="my-4 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold text-center flex items-center justify-center gap-1.5">
+                  <span>🤖</span> ML Engine Active (RandomForest)
+                </div>
+
+                <div className="mb-5">
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">⚙️ Operating Mode</label>
+                  <select value={operatingMode} onChange={(e) => setOperatingMode(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-pink-500">
+                    <option value="🌸 Cycle Tracking">{t('modeCycle')}</option>
+                    <option value="🌿 Conception / Ovulation Peak">🌿 Conception / Ovulation Peak</option>
+                    <option value="👶 Pregnancy Mode">{t('modePregnancy')}</option>
+                  </select>
+                </div>
+
+                <hr className="border-slate-800 my-4" />
+
+                <nav className="space-y-1.5">
+                  {[
+                    { id: 'overview', icon: '🌸', label: t('navOverview') },
+                    { id: 'forecast', icon: '🔮', label: t('navForecast') },
+                    { id: 'calendar', icon: '📅', label: t('navCalendar') },
+                    { id: 'analytics', icon: '📊', label: t('navAnalytics') },
+                    { id: 'symptoms', icon: '📝', label: t('navQuickLog') },
+                    { id: 'export', icon: '📜', label: t('navExport') }
+                  ].map(tab => (
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                      className={`w-full text-left px-3.5 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2.5 transition ${
+                        activeTab === tab.id ? 'bg-pink-500/15 text-pink-400 border border-pink-500/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                      }`}>
+                      <span>{tab.icon}</span> {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              {/* AI Chat Widget + User Card */}
+              <div className="mt-6 space-y-4">
+
+                {/* ── Chat Widget ── */}
+                <div className="glass-card rounded-xl border border-pink-500/30 bg-slate-900/90 shadow-lg overflow-hidden">
+
+                  {/* Header */}
+                  <div onClick={() => setAssistantOpen(!assistantOpen)}
+                    className="flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-pink-500/5 transition select-none">
+                    <span className="flex items-center gap-2 text-xs font-bold text-pink-400">
+                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shadow">AI</span>
+                      {t('askAI')}
+                      {chatMessages.length > 0 && (
+                        <span className="bg-pink-500/20 text-pink-300 text-[9px] font-semibold px-1.5 py-0.5 rounded-full border border-pink-500/30">
+                          {chatMessages.filter(m => m.role === 'ai').length} replies
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[10px] text-slate-500">{assistantOpen ? '▲' : '▼'}</span>
+                  </div>
+
+                  {assistantOpen && (
+                    <div className="flex flex-col" style={{maxHeight:'420px'}}>
+
+                      {/* Quick chips */}
+                      <div className="chip-grid px-3 pt-1 pb-2 border-t border-slate-800/80">
+                        {[
+                          { icon:'🩸', label:'Cramps / ব্যথা',  q:'cramp pain relief tips' },
+                          { icon:'🥗', label:'Ki fruit khabo?', q:'Ki fruit khabo?' },
+                          { icon:'💧', label:'Koto jol khabo?', q:'koto liter jol khabo' },
+                          { icon:'🩺', label:'PCOS / Irregular',q:'pcos symptoms and irregular cycle guidance' },
+                          { icon:'💪', label:'Workouts',        q:'exercise and workout recommendations' },
+                          { icon:'😴', label:'Sleep & Stress',  q:'how to improve sleep and reduce stress during period' },
+                        ].map(chip => (
+                          <button key={chip.q} className="chip" onClick={() => handleAssistantQuery(chip.q)} disabled={isAssistantLoading}>
+                            <span>{chip.icon}</span>{chip.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Message list */}
+                      <div className="chat-scrollbox chat-msg-box px-3 py-2 space-y-3">
+                        {chatMessages.length === 0 && !isAssistantLoading && (
+                          <div className="flex flex-col items-center justify-center h-full text-center py-6 opacity-50">
+                            <span className="text-2xl mb-1">🌸</span>
+                            <p className="text-[11px] text-slate-400">Ask anything about your cycle, nutrition, or symptoms.</p>
+                          </div>
+                        )}
+
+                        {chatMessages.map((msg, i) => (
+                          <div key={i} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            {msg.role === 'ai' && (
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-[9px] font-bold shrink-0 mb-0.5 shadow">AI</div>
+                            )}
+                            {msg.role === 'user'
+                              ? <div className="bubble-user">{msg.text}</div>
+                              : <div className="bubble-ai" dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text) }} />
+                            }
+                            {msg.role === 'user' && (
+                              <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] text-slate-300 font-bold shrink-0 mb-0.5">You</div>
+                            )}
+                          </div>
+                        ))}
+
+                        {isAssistantLoading && (
+                          <div className="flex items-end gap-2 justify-start">
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-[9px] font-bold shrink-0 shadow">AI</div>
+                            <div className="bubble-ai flex items-center gap-1.5 py-3 px-4">
+                              <span className="text-[10px] text-slate-400 mr-1">FemCare AI is thinking</span>
+                              <span className="typing-dot"></span>
+                              <span className="typing-dot"></span>
+                              <span className="typing-dot"></span>
+                            </div>
+                          </div>
+                        )}
+                        <div ref={chatEndRef} />
+                      </div>
+
+                      {/* Input bar */}
+                      <div className="px-3 pb-3 pt-2 border-t border-slate-800/80 flex gap-2 items-center">
+                        <input type="text" className="chat-input" value={assistantQuery}
+                          onChange={e => setAssistantQuery(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && !isAssistantLoading) handleAssistantQuery(); }}
+                          placeholder="Ask in English, Banglish, বাংলা, Hindi..."
+                          disabled={isAssistantLoading} />
+                        <button onClick={() => handleAssistantQuery()}
+                          disabled={isAssistantLoading || !assistantQuery.trim()}
+                          style={{
+                            background:'linear-gradient(135deg,#be185d,#7c3aed)',border:'none',
+                            borderRadius:'10px',padding:'7px 13px',color:'#fff',fontSize:'12px',
+                            fontWeight:'700',cursor:isAssistantLoading?'not-allowed':'pointer',
+                            opacity:isAssistantLoading?0.5:1,whiteSpace:'nowrap',
+                            transition:'opacity 0.2s',flexShrink:0,
+                          }}>
+                          ➤ Send
+                        </button>
+                      </div>
+
+                    </div>
+                  )}
+                </div>
+
+                {/* User card */}
+                <div className="bg-slate-800/40 p-3 rounded-xl border border-slate-700/50 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold text-sm">VS</div>
+                  <div>
+                    <div className="text-xs font-semibold text-slate-200">{overviewData ? overviewData.user_name : 'Valued User'}</div>
+                    <div className="text-[10px] text-slate-400">ID: {overviewData ? overviewData.user_id.substring(0, 8) : 'demo'}...</div>
+                  </div>
+                </div>
+              </div>{/* end mt-6 space-y-4 */}
+            </div>{/* end sidebar-inner */}
+          </aside>
+
+          {/* MAIN CONTENT */}
+          <main className="main-content">
+            {/* HERO BANNER */}
+            <div className="hero-banner rounded-2xl p-6 mb-6">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <div>
+                  <h2 className="font-display text-2xl md:text-3xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-teal-300 bg-clip-text text-transparent">
+                    Welcome back, {overviewData ? overviewData.user_name : 'Valued User'} 🌸
+                  </h2>
+                  <p className="text-sm text-slate-400 mt-1">Real-time ML cycle forecasting, ovulation windows, and reproductive health markers.</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-pink-500/15 border border-pink-500/40 text-pink-400 text-xs font-semibold self-start sm:self-auto">
+                  Active Mode: {operatingMode}
+                </span>
+              </div>
+            </div>
+
+            {/* METRIC CARDS ROW */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {operatingMode === '👶 Pregnancy Mode' ? (
+                <>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Estimated Due Date</div>
+                    <div className="text-2xl font-bold text-purple-400 mt-1">Oct 28, 2026</div>
+                    <div className="text-xs text-emerald-400 mt-1">Naegele's Rule</div>
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Gestational Age</div>
+                    <div className="text-2xl font-bold text-teal-300 mt-1">12w 4d</div>
+                    <div className="text-xs text-slate-400 mt-1">Current Progress</div>
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Current Trimester</div>
+                    <div className="text-2xl font-bold text-pink-400 mt-1">1st Trimester</div>
+                    <div className="text-xs text-slate-400 mt-1">Prenatal Stage</div>
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Folic Acid & Hydration</div>
+                    <div className="text-2xl font-bold text-sky-400 mt-1">400 mcg</div>
+                    <div className="text-xs text-slate-400 mt-1">Daily Rec</div>
+                  </div>
+                </>
+              ) : operatingMode === '🌿 Conception / Ovulation Peak' ? (
+                <>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Peak LH Ovulation</div>
+                    <div className="text-2xl font-bold text-purple-400 mt-1">{activeMLData ? formatDateStr(activeMLData.ovulation_date) : '---'}</div>
+                    <div className="text-xs text-slate-400 mt-1">Target Ovulation</div>
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Conception Probability</div>
+                    <div className="text-2xl font-bold text-teal-300 mt-1">98% Peak</div>
+                    <div className="text-xs text-emerald-400 mt-1">Optimal Window</div>
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Fertile Window Range</div>
+                    <div className="text-sm font-bold text-pink-400 mt-1.5">{activeMLData ? `${formatDateStr(activeMLData.fertile_window_start)} - ${formatDateStr(activeMLData.fertile_window_end)}` : '---'}</div>
+                    <div className="text-xs text-slate-400 mt-1">6 Days Window</div>
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Cycle Forecast</div>
+                    <div className="text-2xl font-bold text-sky-400 mt-1">{activeMLData ? activeMLData.predicted_cycle_days : '28'} Days</div>
+                    <div className="text-xs text-slate-400 mt-1">Confidence: {activeMLData ? Math.round(activeMLData.confidence_score * 100) : '90'}%</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{t('metricDaysUntilPeriod')}</div>
+                    <div className="text-2xl font-bold text-pink-400 mt-1">{activeMLData ? activeMLData.days_until_next_period : '14'} {t('metricDays')}</div>
+                    <div className="text-xs text-slate-400 mt-1">{t('metricExpected')}: {activeMLData ? formatDateStr(activeMLData.next_period_start) : '---'}</div>
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{t('metricPredictedOvulation')}</div>
+                    <div className="text-2xl font-bold text-purple-400 mt-1">{activeMLData ? formatDateStr(activeMLData.ovulation_date) : '---'}</div>
+                    <div className="text-xs text-slate-400 mt-1">{t('metricFertile')}: {activeMLData ? formatDateStr(activeMLData.fertile_window_start) : '---'}</div>
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{t('metricForecastCycleLength')}</div>
+                    <div className="text-2xl font-bold text-teal-300 mt-1">{activeMLData ? activeMLData.predicted_cycle_days : '28'} {t('metricDays')}</div>
+                    <div className="text-xs text-slate-400 mt-1">{t('metricConfidence')}: {activeMLData ? Math.round(activeMLData.confidence_score * 100) : '90'}%</div>
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{t('metricCurrentPhase')}</div>
+                    <div className="text-sm font-bold text-pink-400 mt-1.5 px-2.5 py-1 bg-pink-500/10 border border-pink-500/30 rounded-lg inline-block">{activeMLData ? activeMLData.current_phase : 'Follicular'}</div>
+                    <div className="text-xs text-slate-400 mt-1">Cycle Day {activeMLData ? activeMLData.current_cycle_day : '14'}</div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* VIEW 1: OVERVIEW */}
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                {overviewData && overviewData.anomaly_data && (
+                  <div className="glass-card rounded-2xl p-5 border border-emerald-500/30 bg-emerald-500/5">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold text-slate-100 text-base">🤖 AI Health Insight: {overviewData.anomaly_data.summary_text}</h4>
+                      <span className="text-xs text-slate-400">Cycle Std Dev: {overviewData.anomaly_data.std_length} Days</span>
+                    </div>
+                    <div className="text-xs text-slate-300 space-y-1 leading-relaxed">
+                      {overviewData.anomaly_data.insights.map((ins, idx) => (
+                        <div key={idx}><b>{ins.title}:</b> {ins.desc}</div>
+                      ))}
+                    </div>
+                    <hr className="border-slate-700/60 my-2" />
+                    <p className="text-[10px] text-slate-400 italic">{overviewData.anomaly_data.disclaimer}</p>
+                  </div>
+                )}
+
+                <div className="glass-card rounded-2xl p-6">
+                  <h3 className="font-display text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+                    <span>⚙️</span> {t('inputCalibrationTitle')}
+                  </h3>
+                  <form onSubmit={handleRunPrediction} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">📅 {t('baselineTitle')}</h4>
+                      <div>
+                        <label className="block text-xs text-slate-300 mb-1">{t('lastPeriodDate')}</label>
+                        <input
+                          type="date"
+                          value={formData.last_period_date}
+                          onChange={(e) => setFormData({ ...formData, last_period_date: e.target.value })}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-300 mb-1">{t('ageYears')}</label>
+                        <input
+                          type="number"
+                          value={formData.age}
+                          onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🔄 {t('historicalDurationTitle')}</h4>
+                      <div>
+                        <label className="block text-xs text-slate-300 mb-1">{t('lastCycleDuration')}</label>
+                        <input
+                          type="number"
+                          value={formData.last_cycle_length}
+                          onChange={(e) => setFormData({ ...formData, last_cycle_length: parseFloat(e.target.value) })}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-300 mb-1">{t('secondLastCycleDuration')}</label>
+                        <input
+                          type="number"
+                          value={formData.cycle_length_2}
+                          onChange={(e) => setFormData({ ...formData, cycle_length_2: parseFloat(e.target.value) })}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🌿 {t('lifestyleMarkersTitle')}</h4>
+                      <div>
+                        <label className="block text-xs text-slate-300 mb-1">{t('stressLevel')}</label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="5"
+                          value={formData.stress_level}
+                          onChange={(e) => setFormData({ ...formData, stress_level: parseInt(e.target.value) })}
+                          className="w-full accent-pink-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-3 mt-2">
+                      <button
+                        type="submit"
+                        disabled={isPredicting}
+                        className="w-full py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {isPredicting ? (
+                          <>
+                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>{t('calculatingForecast')}</span>
+                          </>
+                        ) : (
+                          <span>{t('runForecastBtn')}</span>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* INLINE LIVE ML RESULT CARD */}
+                  {activeMLData && (
+                    <div ref={resultCardRef} className="ml-result-card rounded-2xl p-6 border border-pink-500/40 animate-slide-up mt-6 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-700/60 mb-5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg border border-emerald-500/30">
+                            ✓
+                          </div>
+                          <div>
+                            <h4 className="font-display text-base font-bold text-slate-100 flex items-center gap-2">
+                              ✓ ML Forecast Successfully Generated
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[10px] uppercase font-bold tracking-wider border border-emerald-500/30">
+                                Live Updated
+                              </span>
+                            </h4>
+                            <p className="text-xs text-slate-400">Clinical-grade predictive output based on Random Forest ensemble</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            ML Confidence: {Math.round((activeMLData.confidence_score || 0.95) * 100)}%
+                          </span>
+                          <span className="px-3 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-xs font-semibold">
+                            {activeMLData.used_ml_model ? '🤖 RandomForest Engine' : '⚙️ Fallback Rules'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* 1. Days Until Next Period */}
+                        <div className="bg-slate-900/70 rounded-xl p-4 border border-slate-800/80 flex flex-col justify-between">
+                          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Days Until Next Period</div>
+                          <div className="text-3xl font-extrabold text-pink-400 mt-2">
+                            {activeMLData.days_until_next_period} <span className="text-sm font-semibold text-slate-300">Days</span>
+                          </div>
+                          <div className="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                            <span>🩸</span> Starts in {activeMLData.days_until_next_period} days
+                          </div>
+                        </div>
+
+                        {/* 2. Expected Date Range */}
+                        <div className="bg-slate-900/70 rounded-xl p-4 border border-slate-800/80 flex flex-col justify-between">
+                          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Expected Date Range</div>
+                          <div className="text-base font-bold text-slate-100 mt-2 leading-tight">
+                            Expected: {formatDateStr(activeMLData.next_period_start)}
+                          </div>
+                          <div className="text-xs text-pink-400 mt-2">
+                            Range: {formatDateStr(activeMLData.next_period_start)} – {formatDateStr(activeMLData.next_period_end)}
+                          </div>
+                        </div>
+
+                        {/* 3. Forecast Cycle Duration */}
+                        <div className="bg-slate-900/70 rounded-xl p-4 border border-slate-800/80 flex flex-col justify-between">
+                          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Forecast Cycle Duration</div>
+                          <div className="text-3xl font-extrabold text-teal-300 mt-2">
+                            {activeMLData.predicted_cycle_days} <span className="text-sm font-semibold text-slate-300">Days</span>
+                          </div>
+                          <div className="text-xs text-slate-400 mt-2">
+                            Last length: {formData.last_cycle_length || 28}d
+                          </div>
+                        </div>
+
+                        {/* 4. Dynamic Ovulation Phase Tag */}
+                        <div className="bg-slate-900/70 rounded-xl p-4 border border-slate-800/80 flex flex-col justify-between">
+                          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Dynamic Ovulation Phase</div>
+                          <div className="mt-2">
+                            <span className="inline-block px-2.5 py-1 rounded-lg bg-pink-500/20 text-pink-300 font-bold text-xs border border-pink-500/30">
+                              🌸 {activeMLData.current_phase} Phase
+                            </span>
+                            <div className="text-xs text-purple-300 font-semibold mt-2">
+                              ⭐ Ovulation: {formatDateStr(activeMLData.ovulation_date)}
+                            </div>
+                          </div>
+                          <div className="text-xs text-slate-400 mt-2">
+                            Cycle Day {activeMLData.current_cycle_day}
+                          </div>
+                        </div>
+                      </div>
+
+                      {activeMLData.model_notes && (
+                        <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                          <span className="flex items-center gap-1.5">
+                            <span>🩺</span> Medical Note: {activeMLData.model_notes}
+                          </span>
+                          <span className="text-[10px] text-slate-500">FemCare AI v3.0 Health Engine</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 2: MULTI-CYCLE FORECAST */}
+            {activeTab === 'forecast' && overviewData && (
+              <div className="space-y-6">
+                <h3 className="font-display text-xl font-bold text-slate-100 flex items-center gap-2">
+                  <span>🔮</span> 6-Month Predictive Projection Matrix
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {overviewData.multi_projections.map((p, idx) => (
+                    <div key={idx} className="glass-card rounded-2xl p-4 border border-pink-500/20">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-bold text-pink-400 text-base">Cycle #{p.cycle_number}</span>
+                        <span className="bg-slate-800 px-2 py-0.5 rounded text-xs text-slate-400">{p.cycle_length} Days</span>
+                      </div>
+                      <div className="text-xs text-slate-200 mb-1">🩸 <b>Period Start:</b> <span className="text-pink-400">{formatDateStr(p.period_start)}</span></div>
+                      <div className="text-xs text-slate-200 mb-1">⭐ <b>Ovulation:</b> <span className="text-purple-300">{formatDateStr(p.ovulation_date)}</span></div>
+                      <div className="text-xs text-slate-200">🌿 <b>Fertile:</b> <span className="text-teal-300">{formatDateStr(p.fertile_start)} - {formatDateStr(p.fertile_end)}</span></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 3: INTERACTIVE CALENDAR */}
+            {activeTab === 'calendar' && calendarData && (
+              <div className="space-y-6 animate-slide-up">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-display text-xl font-bold text-slate-100 flex items-center gap-2">
+                      <span>📅</span> Interactive Reproductive Health Calendar
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">ML-driven daily biological phase map, fertile windows, and interactive day logging.</p>
+                  </div>
+
+                  {/* MONTH NAVIGATION CONTROLS */}
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <button
+                      onClick={handlePrevMonth}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>◄</span> Prev
+                    </button>
+                    <button
+                      onClick={handleCurrentMonth}
+                      className="px-3 py-1.5 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 text-xs font-bold border border-pink-500/30 transition cursor-pointer"
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={handleNextMonth}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1 cursor-pointer"
+                    >
+                      Next <span>►</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* CONDITIONAL OPERATIONAL STATE BANNER */}
+                {!isCalculated ? (
+                  <div className="bg-slate-900/90 border border-pink-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-300 animate-slide-up">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold text-xl border border-pink-500/30 shrink-0">
+                        ℹ️
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-100 text-sm">{t('cleanCalendarTitle')}</div>
+                        <p className="text-slate-400 mt-0.5">{t('cleanCalendarDesc')}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('overview')}
+                      className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 text-white font-semibold rounded-xl transition text-xs shrink-0 cursor-pointer shadow-md flex items-center gap-1.5"
+                    >
+                      <span>⚡</span> {t('goOverviewBtn')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">{t('activeMLForecastLoaded')}</span>
+                      </div>
+                      <button
+                        onClick={handleResetCalendar}
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                      >
+                        <span>🔄</span> {t('resetCalendarBtn')}
+                      </button>
+                    </div>
+
+                    {/* HORIZONTAL LEGEND GUIDE */}
+                    <div className="glass-card rounded-xl p-4 border border-slate-700/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <span className="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <span>🏷️</span> {t('legendGuide')}
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/50 text-rose-300 font-semibold flex items-center gap-1">
+                          {t('badgePeriod')}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 font-semibold flex items-center gap-1">
+                          {t('badgeFertility')}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/25 border-2 border-amber-400 text-amber-200 font-extrabold flex items-center gap-1 shadow-sm">
+                          {t('badgeOvulation')}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 font-medium">
+                          {t('badgeFollicular')}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 font-medium">
+                          {t('badgeLuteal')}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 font-semibold flex items-center gap-1">
+                          {t('badgeLogged')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* MAIN CALENDAR GRID CONTAINER */}
+                <div className="glass-card rounded-2xl p-6">
+                  <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+                    <h4 className="font-display font-bold text-xl text-slate-100 flex items-center gap-2">
+                      <span>🗓️</span> {calendarData.month_name} {calendarData.year}
+                    </h4>
+                    <span className="text-xs text-slate-400">
+                      {isCalculated ? 'Click any day cell to view detail drawer & quick-log symptoms' : 'Clean Calendar Grid (No active predictions calculated)'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                  </div>
+
+                  {calendarData.weeks.map((week, wIdx) => (
+                    <div key={wIdx} className="grid grid-cols-7 gap-2 mb-2">
+                      {week.map((day, dIdx) => {
+                        let bgStyle = 'bg-slate-900/40 border-slate-800 text-slate-400 hover:border-slate-600';
+                        let badge = null;
+                        let phaseBadge = null;
+
+                        if (!day.is_current_month) {
+                          bgStyle = 'bg-slate-950/20 border-transparent opacity-25 hover:opacity-50';
+                        } else if (isCalculated) {
+                          if (day.is_period) {
+                            bgStyle = 'bg-rose-500/20 border-rose-500/60 text-rose-200 hover:border-rose-400 shadow-sm shadow-rose-950/50';
+                            badge = <span className="px-1.5 py-0.5 rounded bg-rose-500/30 text-rose-300 font-bold text-[10px] flex items-center gap-1 border border-rose-500/40">{t('badgePeriod')}</span>;
+                          } else if (day.is_ovulation) {
+                            bgStyle = 'bg-amber-500/25 border-2 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(251,191,36,0.35)] hover:scale-[1.02] transition-transform';
+                            badge = <span className="px-1.5 py-0.5 rounded bg-amber-400/30 text-amber-200 font-extrabold text-[10px] flex items-center gap-1 border border-amber-400">{t('badgeOvulation')}</span>;
+                          } else if (day.is_fertile) {
+                            bgStyle = 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:border-emerald-400 shadow-sm shadow-emerald-950/50';
+                            badge = <span className="px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-300 font-bold text-[10px] flex items-center gap-1 border border-emerald-500/40">{t('badgeFertility')}</span>;
+                          } else if (day.phase_code === 'follicular') {
+                            bgStyle = 'bg-blue-500/10 border-blue-500/20 text-slate-300 hover:border-blue-400/40';
+                            phaseBadge = <span className="text-[9px] text-blue-400/80 font-medium">{t('badgeFollicular')}</span>;
+                          } else if (day.phase_code === 'luteal') {
+                            bgStyle = 'bg-purple-500/10 border-purple-500/20 text-slate-300 hover:border-purple-400/40';
+                            phaseBadge = <span className="text-[9px] text-purple-400/80 font-medium">{t('badgeLuteal')}</span>;
+                          }
+                        }
+
+                        return (
+                          <div
+                            key={dIdx}
+                            onClick={() => handleSelectDay(day)}
+                            className={`h-24 p-2 rounded-xl border transition-all duration-200 cursor-pointer ${bgStyle} ${
+                              day.is_today ? 'ring-2 ring-pink-400 ring-offset-2 ring-offset-slate-900' : ''
+                            } flex flex-col justify-between group hover:shadow-lg`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <span className={`text-xs font-bold ${day.is_today ? 'text-pink-400' : 'text-slate-200'}`}>
+                                {day.day_number}
+                                {day.is_today && <span className="ml-1 text-[8px] bg-pink-500 text-white px-1 rounded-full uppercase">Today</span>}
+                              </span>
+                              {day.has_symptom && (
+                                <span className="w-2 h-2 rounded-full bg-sky-400 ring-2 ring-sky-400/30 animate-pulse" title="Symptom logged"></span>
+                              )}
+                            </div>
+
+                            <div className="space-y-1">
+                              {badge}
+                              {!badge && phaseBadge}
+                              {day.has_symptom && (
+                                <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[9px] font-semibold flex items-center gap-0.5 border border-sky-500/30">
+                                  {t('badgeLogged')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+
+                {/* INTERACTIVE DAY DETAIL MODAL / DRAWER */}
+                {selectedDay && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-slide-up">
+                    <div className="glass-card rounded-2xl w-full max-w-lg p-6 border border-pink-500/40 shadow-2xl relative">
+                      <div className="flex justify-between items-center pb-4 border-b border-slate-700/60 mb-5">
+                        <div>
+                          <span className="text-xs uppercase font-bold tracking-wider text-pink-400">Biological Day Details</span>
+                          <h4 className="font-display text-xl font-bold text-slate-100 mt-0.5">
+                            📅 {formatDateStr(selectedDay.date)}
+                          </h4>
+                        </div>
+                        <button
+                          onClick={() => setSelectedDay(null)}
+                          className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-sm transition focus:outline-none cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <div className="space-y-5">
+                        {/* PHASE & CONCEPTION PROBABILITY METRICS */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Phase</div>
+                            <div className="text-sm font-bold text-pink-400 mt-1">
+                              {isCalculated ? (selectedDay.phase || 'Standard Day') : 'Uncalculated Day'}
+                            </div>
+                          </div>
+                          <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Conception Probability</div>
+                            <div className="text-sm font-bold text-teal-300 mt-1">
+                              {isCalculated ? (selectedDay.conception_probability || 'Low') : 'Awaiting Forecast'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* PHASE SPECIFIC CLINICAL GUIDANCE */}
+                        <div className="bg-pink-500/10 border border-pink-500/20 rounded-xl p-3.5 text-xs text-slate-300 leading-relaxed">
+                          <div className="font-bold text-pink-400 mb-1 flex items-center gap-1.5">
+                            <span>🩺</span> Health Recommendation:
+                          </div>
+                          {!isCalculated && "Run ML forecast under Overview & Prediction to enable personalized AI clinical guidance for this day."}
+                          {isCalculated && selectedDay.is_period && "Focus on rest, hydration, and light stretching. Apply heat for cramping relief."}
+                          {isCalculated && selectedDay.is_ovulation && "Peak fertility window! High energy levels. Ideal for conception planning."}
+                          {isCalculated && selectedDay.is_fertile && !selectedDay.is_ovulation && "High probability window leading into peak ovulation. Stay well hydrated."}
+                          {isCalculated && selectedDay.phase_code === 'follicular' && "Estrogen rising! Great phase for strength training and high-protein nutrition."}
+                          {isCalculated && selectedDay.phase_code === 'luteal' && "Progesterone peak. Focus on mindfulness, magnesium-rich foods, and gentle workouts."}
+                        </div>
+
+                        {/* QUICK LOG SYMPTOMS DIRECTLY FOR THIS DAY */}
+                        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-3">
+                          <h5 className="font-semibold text-xs text-slate-200 flex items-center gap-1.5">
+                            <span>📝</span> Quick-Log Symptoms for {formatDateStr(selectedDay.date)}
+                          </h5>
+                          <form onSubmit={handleSaveDaySymptom} className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-[11px] text-slate-400 mb-1">Flow Level</label>
+                                <select
+                                  value={daySymptomForm.flow_level}
+                                  onChange={(e) => setDaySymptomForm({ ...daySymptomForm, flow_level: e.target.value })}
+                                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                                >
+                                  <option value="None">None</option>
+                                  <option value="Spotting">Spotting</option>
+                                  <option value="Light">Light</option>
+                                  <option value="Medium">Medium</option>
+                                  <option value="Heavy">Heavy</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[11px] text-slate-400 mb-1">Cramps Severity ({daySymptomForm.cramps}/5)</label>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="5"
+                                  value={daySymptomForm.cramps}
+                                  onChange={(e) => setDaySymptomForm({ ...daySymptomForm, cramps: parseInt(e.target.value) })}
+                                  className="w-full accent-pink-500 mt-2"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] text-slate-400 mb-1">Daily Notes</label>
+                              <input
+                                type="text"
+                                placeholder="Log symptoms, mood, or physical notes..."
+                                value={daySymptomForm.notes}
+                                onChange={(e) => setDaySymptomForm({ ...daySymptomForm, notes: e.target.value })}
+                                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                              />
+                            </div>
+
+                            <button
+                              type="submit"
+                              disabled={isSavingDaySymptom}
+                              className="w-full py-2 bg-pink-600 hover:bg-pink-500 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                            >
+                              {isSavingDaySymptom ? (
+                                <>
+                                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  <span>Saving Log...</span>
+                                </>
+                              ) : (
+                                <span>💾 Save Symptom Log for {formatDateStr(selectedDay.date)}</span>
+                              )}
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VIEW 4: HEALTH ANALYTICS */}
+            {activeTab === 'analytics' && analyticsData && (
+              <div className="space-y-6">
+                <h3 className="font-display text-xl font-bold text-slate-100 flex items-center gap-2">
+                  <span>📊</span> Real-Time Health Analytics
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="glass-card rounded-2xl p-5">
+                    <h4 className="font-semibold text-slate-200 text-sm mb-4">🎯 Model Reliability Index</h4>
+                    <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                      <div className="text-xs text-slate-400 font-semibold uppercase">MEAN ABSOLUTE ERROR (MAE)</div>
+                      <div className="text-3xl font-bold text-emerald-400 mt-1">{analyticsData.mae.toFixed(2)} Days</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 5: QUICK-LOG & FEEDBACK */}
+            {activeTab === 'symptoms' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="glass-card rounded-2xl p-6">
+                  <h4 className="font-semibold text-slate-200 text-base mb-4">📝 Log Daily Symptoms</h4>
+                  <form onSubmit={handleLogSymptoms} className="space-y-4">
+                    <div>
+                      <label className="block text-xs text-slate-300 mb-1">Flow Level</label>
+                      <select
+                        value={symptomForm.flow_level}
+                        onChange={(e) => setSymptomForm({ ...symptomForm, flow_level: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                      >
+                        <option value="None">None</option>
+                        <option value="Spotting">Spotting</option>
+                        <option value="Light">Light</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Heavy">Heavy</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-300 mb-1">Cramps Severity (0-5)</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="5"
+                        value={symptomForm.cramps}
+                        onChange={(e) => setSymptomForm({ ...symptomForm, cramps: parseInt(e.target.value) })}
+                        className="w-full accent-pink-500"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isLoggingSymptom}
+                      className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                    >
+                      {isLoggingSymptom ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <span>💾 Save Daily Log</span>
+                      )}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="glass-card rounded-2xl p-6">
+                  <h4 className="font-semibold text-slate-200 text-base mb-4">✅ Verify Actual Period Date</h4>
+                  <form onSubmit={handleSubmitFeedback} className="space-y-4">
+                    <div>
+                      <label className="block text-xs text-slate-300 mb-1">Actual Period Start Date</label>
+                      <input
+                        type="date"
+                        value={feedbackForm.feedback_date}
+                        onChange={(e) => setFeedbackForm({ ...feedbackForm, feedback_date: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingFeedback}
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                    >
+                      {isSubmittingFeedback ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <span>✅ Submit Ground Truth Feedback</span>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 6: DATASET & MEDICAL EXPORT */}
+            {activeTab === 'export' && (
+              <div className="glass-card rounded-2xl p-6 border border-pink-500/30 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-display text-lg font-bold text-slate-100">📄 Export Medical Summary Report for Gynecologist</h3>
+                  <p className="text-xs text-slate-400 mt-1">Compiles past cycle history, symptom trends, anomaly flags, and ML forecast into a clinical PDF.</p>
+                </div>
+                <button onClick={() => window.location.href='/api/export-pdf?user_name=Valued_User'} className="px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 text-white font-semibold text-sm rounded-xl shadow-lg transition">
+                  📥 Download Clinical PDF Doctor Report
+                </button>
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

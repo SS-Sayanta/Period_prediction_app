@@ -1,0 +1,22 @@
+{
+  "name": "femcare-ai-enterprise",
+  "version": "3.0.0",
+  "description": "FemCare AI — Enterprise Reproductive Health & Ovulation Prediction Platform",
+  "main": "main.py",
+  "scripts": {
+    "start": "uvicorn main:app --host 0.0.0.0 --port 8000",
+    "dev": "uvicorn main:app --host 127.0.0.1 --port 8000 --reload",
+    "build": "echo 'Building static assets...'"
+  },
+  "keywords": [
+    "femtech",
+    "fastapi",
+    "react",
+    "tailwind",
+    "machine-learning",
+    "vercel"
+  ],
+  "author": "FemCare AI Team",
+  "license": "MIT",
+  "dependencies": {}
+}

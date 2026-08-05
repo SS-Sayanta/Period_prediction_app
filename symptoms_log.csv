@@ -1,0 +1,3 @@
+user_id,log_date,cramps,bloating,mood,energy,headache,fatigue,flow_level,notes,recorded_at
+demo-user-001,2026-08-03,2,1,4,3,0,1,Medium,Feeling good today,2026-08-03T13:53:38.642539
+a06aa1c2-751b-436b-9e80-f124cca31e24,2026-08-05,0,0,3,3,0,0,None,,2026-08-05 20:26:11

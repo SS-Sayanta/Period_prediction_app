@@ -1,0 +1,201 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import joblib
+import uuid
+from google import genai   # ✅ NEW GEMINI
+
+# -----------------------
+# 🔑 GEMINI API KEY
+# -----------------------
+client = genai.Client(api_key="AIzaSyB9ENCGS-MWxpmr8T85wonG2X9n6z1XUOg")
+
+# -----------------------
+# NEW USER SESSION
+# -----------------------
+if "user_id" not in st.session_state:
+    st.session_state.user_id = str(uuid.uuid4())
+    st.session_state.chat_history = []
+
+# -----------------------
+# LOAD MODEL
+# -----------------------
+data = joblib.load("period_model.pkl")
+
+if isinstance(data, tuple):
+    model, features = data
+else:
+    model = data
+    features = [
+        'age','stress_level','exercise_hours',
+        'water_intake_liters','mood_score',
+        'last_cycle_length','cycle_length_2',
+        'cycle_length_3','cycle_avg','cycle_variability'
+    ]
+
+# -----------------------
+# UI
+# -----------------------
+st.set_page_config(page_title="AI Period Predictor", layout="centered")
+
+st.title("🌸 Smart AI Period Prediction")
+st.markdown("### 💖 Track • Predict • Understand Your Body")
+
+user_name = st.text_input("Enter Your Name 💖")
+
+# -----------------------
+# PREDICTION FORM
+# -----------------------
+with st.form("prediction_form"):
+
+    last_date = st.date_input("Last Period Date", key="last_date")
+
+    age = st.number_input("Age", 10, 50, key="age")
+
+    cycle1 = st.number_input("Last Cycle", 0, 60, key="c1")
+    cycle2 = st.number_input("2nd Last Cycle", 0, 60, key="c2")
+    cycle3 = st.number_input("3rd Last Cycle", 0, 60, key="c3")
+
+    stress = st.slider("Stress Level", 1, 5, key="stress")
+    mood = st.slider("Mood Score", 1, 5, key="mood")
+
+    exercise = st.slider("Exercise Hours/week", 0.0, 10.0, key="exercise")
+    water = st.slider("Water Intake (liters/day)", 0.5, 5.0, key="water")
+
+    submitted = st.form_submit_button("🚀 Predict")
+
+# -----------------------
+# PREDICTION
+# -----------------------
+if submitted:
+
+    cycles = [c for c in [cycle1, cycle2, cycle3] if c > 0]
+
+    if len(cycles) == 0:
+        cycles = [28]
+
+    if len(cycles) == 1:
+        cycles = cycles * 3
+
+    if len(cycles) == 2:
+        cycles.append(np.mean(cycles))
+
+    c1, c2, c3 = cycles
+
+    cycle_avg = np.mean([c1, c2, c3])
+    cycle_variability = np.std([c1, c2, c3])
+
+    input_dict = {
+        'age': age,
+        'stress_level': stress,
+        'exercise_hours': exercise,
+        'water_intake_liters': water,
+        'mood_score': mood,
+        'last_cycle_length': c1,
+        'cycle_length_2': c2,
+        'cycle_length_3': c3,
+        'cycle_avg': cycle_avg,
+        'cycle_variability': cycle_variability
+    }
+
+    input_df = pd.DataFrame([input_dict])
+    input_df = input_df.reindex(columns=features, fill_value=0)
+
+    predicted_cycle = model.predict(input_df)[0]
+
+    last_date = pd.to_datetime(last_date)
+
+    next_period = last_date + pd.Timedelta(days=int(predicted_cycle))
+    ovulation_date = last_date + pd.Timedelta(days=int(predicted_cycle) - 14)
+    fertile_start = ovulation_date - pd.Timedelta(days=5)
+    fertile_end = ovulation_date + pd.Timedelta(days=1)
+
+    # OUTPUT
+    st.success(f"🌸 Next Period: {next_period.date()}")
+    st.info(f"🥚 Ovulation: {ovulation_date.date()}")
+    st.warning(f"💖 Fertile Window: {fertile_start.date()} → {fertile_end.date()}")
+
+    st.divider()
+
+    # GRAPH
+    st.subheader("📊 Cycle Trend")
+    st.line_chart([c1, c2, c3])
+
+    st.divider()
+
+    # HEALTH CHECK
+    st.subheader("⚠️ Cycle Health")
+
+    if cycle_variability > 5:
+        st.error("Irregular cycle detected")
+    elif cycle_variability > 2:
+        st.warning("Slight variation")
+    else:
+        st.success("Cycle looks healthy")
+
+    st.divider()
+
+    # SUGGESTIONS
+    st.subheader("🍎 Health Suggestions")
+
+    if stress >= 4:
+        st.write("🧘 Reduce stress")
+    if water < 2:
+        st.write("💧 Drink more water")
+    if exercise > 5:
+        st.write("😴 Take rest")
+
+    st.divider()
+
+    # CALENDAR
+    st.subheader("📅 Calendar")
+
+    st.table(pd.DataFrame({
+        "Event": ["Next Period","Ovulation","Fertile Start","Fertile End"],
+        "Date": [
+            next_period.date(),
+            ovulation_date.date(),
+            fertile_start.date(),
+            fertile_end.date()
+        ]
+    }))
+
+# -----------------------
+# 🤖 GEMINI CHAT (UPDATED)
+# -----------------------
+st.subheader("💬 AI Assistant")
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+with st.form("chat_form", clear_on_submit=True):
+
+    user_query = st.text_input("Ask anything")
+
+    chat_submit = st.form_submit_button("Send")
+
+    if chat_submit and user_query:
+
+       try:
+           context = f"Age:{st.session_state.get('age','')} Stress:{st.session_state.get('stress','')}"
+
+           response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=context + user_query   # ✅ FIXED
+        )
+
+           reply = response.text   # ✅ simple
+
+       except Exception as e:
+        st.error(f"REAL ERROR: {str(e)}")
+        reply = "⚠️ AI failed"
+
+        st.session_state.chat_history.append(("You", user_query))
+        st.session_state.chat_history.append(("AI", reply))
+
+# SHOW CHAT
+for sender, msg in st.session_state.chat_history:
+    if sender == "You":
+        st.write(f"🧑 {msg}")
+    else:
+        st.write(f"🤖 {msg}")
