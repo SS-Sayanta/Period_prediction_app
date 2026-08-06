@@ -1565,12 +1565,18 @@
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                  <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 sm:mb-3">
+                    <div className="py-1 bg-slate-900/60 rounded-md sm:bg-transparent">Sun</div>
+                    <div className="py-1 bg-slate-900/60 rounded-md sm:bg-transparent">Mon</div>
+                    <div className="py-1 bg-slate-900/60 rounded-md sm:bg-transparent">Tue</div>
+                    <div className="py-1 bg-slate-900/60 rounded-md sm:bg-transparent">Wed</div>
+                    <div className="py-1 bg-slate-900/60 rounded-md sm:bg-transparent">Thu</div>
+                    <div className="py-1 bg-slate-900/60 rounded-md sm:bg-transparent">Fri</div>
+                    <div className="py-1 bg-slate-900/60 rounded-md sm:bg-transparent">Sat</div>
                   </div>
 
                   {calendarData.weeks.map((week, wIdx) => (
-                    <div key={wIdx} className="grid grid-cols-7 gap-2 mb-2">
+                    <div key={wIdx} className="grid grid-cols-7 gap-1 sm:gap-2 mb-1 sm:mb-2">
                       {week.map((day, dIdx) => {
                         let bgStyle = 'bg-slate-900/40 border-slate-800 text-slate-400 hover:border-slate-600';
                         let badge = null;
@@ -1581,19 +1587,19 @@
                         } else if (isCalculated) {
                           if (day.is_period) {
                             bgStyle = 'bg-rose-500/20 border-rose-500/60 text-rose-200 hover:border-rose-400 shadow-sm shadow-rose-950/50';
-                            badge = <span className="px-1.5 py-0.5 rounded bg-rose-500/30 text-rose-300 font-bold text-[10px] flex items-center gap-1 border border-rose-500/40">{t('badgePeriod')}</span>;
+                            badge = <span className="px-1 py-0.5 rounded bg-rose-500/30 text-rose-300 font-bold text-[8px] sm:text-[10px] flex items-center justify-center gap-0.5 border border-rose-500/40 truncate max-w-full">{t('badgePeriod')}</span>;
                           } else if (day.is_ovulation) {
                             bgStyle = 'bg-amber-500/25 border-2 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(251,191,36,0.35)] hover:scale-[1.02] transition-transform';
-                            badge = <span className="px-1.5 py-0.5 rounded bg-amber-400/30 text-amber-200 font-extrabold text-[10px] flex items-center gap-1 border border-amber-400">{t('badgeOvulation')}</span>;
+                            badge = <span className="px-1 py-0.5 rounded bg-amber-400/30 text-amber-200 font-extrabold text-[8px] sm:text-[10px] flex items-center justify-center gap-0.5 border border-amber-400 truncate max-w-full">{t('badgeOvulation')}</span>;
                           } else if (day.is_fertile) {
                             bgStyle = 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:border-emerald-400 shadow-sm shadow-emerald-950/50';
-                            badge = <span className="px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-300 font-bold text-[10px] flex items-center gap-1 border border-emerald-500/40">{t('badgeFertility')}</span>;
+                            badge = <span className="px-1 py-0.5 rounded bg-emerald-500/30 text-emerald-300 font-bold text-[8px] sm:text-[10px] flex items-center justify-center gap-0.5 border border-emerald-500/40 truncate max-w-full">{t('badgeFertility')}</span>;
                           } else if (day.phase_code === 'follicular') {
                             bgStyle = 'bg-blue-500/10 border-blue-500/20 text-slate-300 hover:border-blue-400/40';
-                            phaseBadge = <span className="text-[9px] text-blue-400/80 font-medium">{t('badgeFollicular')}</span>;
+                            phaseBadge = <span className="text-[7px] sm:text-[9px] text-blue-400/80 font-medium truncate max-w-full block text-center">{t('badgeFollicular')}</span>;
                           } else if (day.phase_code === 'luteal') {
                             bgStyle = 'bg-purple-500/10 border-purple-500/20 text-slate-300 hover:border-purple-400/40';
-                            phaseBadge = <span className="text-[9px] text-purple-400/80 font-medium">{t('badgeLuteal')}</span>;
+                            phaseBadge = <span className="text-[7px] sm:text-[9px] text-purple-400/80 font-medium truncate max-w-full block text-center">{t('badgeLuteal')}</span>;
                           }
                         }
 
@@ -1601,25 +1607,25 @@
                           <div
                             key={dIdx}
                             onClick={() => handleSelectDay(day)}
-                            className={`h-24 p-2 rounded-xl border transition-all duration-200 cursor-pointer ${bgStyle} ${
+                            className={`min-h-[48px] sm:h-24 p-1 sm:p-2 rounded-lg sm:rounded-xl border transition-all duration-200 cursor-pointer ${bgStyle} ${
                               day.is_today ? 'ring-2 ring-pink-400 ring-offset-2 ring-offset-slate-900' : ''
-                            } flex flex-col justify-between group hover:shadow-lg`}
+                            } flex flex-col justify-between group hover:shadow-lg min-w-0 overflow-hidden`}
                           >
                             <div className="flex justify-between items-start">
-                              <span className={`text-xs font-bold ${day.is_today ? 'text-pink-400' : 'text-slate-200'}`}>
+                              <span className={`text-[10px] sm:text-xs font-bold ${day.is_today ? 'text-pink-400' : 'text-slate-200'}`}>
                                 {day.day_number}
-                                {day.is_today && <span className="ml-1 text-[8px] bg-pink-500 text-white px-1 rounded-full uppercase">Today</span>}
+                                {day.is_today && <span className="ml-0.5 text-[7px] sm:text-[8px] bg-pink-500 text-white px-1 rounded-full uppercase hidden sm:inline">Today</span>}
                               </span>
                               {day.has_symptom && (
-                                <span className="w-2 h-2 rounded-full bg-sky-400 ring-2 ring-sky-400/30 animate-pulse" title="Symptom logged"></span>
+                                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-sky-400 ring-2 ring-sky-400/30 animate-pulse shrink-0" title="Symptom logged"></span>
                               )}
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-0.5 overflow-hidden w-full">
                               {badge}
                               {!badge && phaseBadge}
                               {day.has_symptom && (
-                                <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[9px] font-semibold flex items-center gap-0.5 border border-sky-500/30">
+                                <span className="px-1 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[7px] sm:text-[9px] font-semibold flex items-center justify-center gap-0.5 border border-sky-500/30 truncate max-w-full">
                                   {t('badgeLogged')}
                                 </span>
                               )}

@@ -275,5 +275,112 @@ div.stButton > button[kind="primary"]:hover {
     background: rgba(244, 114, 182, 0.15) !important;
     color: #F472B6 !important;
 }
+
+/* Responsive 7-Column Calendar Grid System */
+.calendar-card {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 1.5rem;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.calendar-header-cell {
+    padding: 8px 4px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    color: #94A3B8;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    text-align: center;
+    box-sizing: border-box;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.calendar-day-cell {
+    padding: 8px 4px;
+    border-radius: 12px;
+    min-height: 64px;
+    box-sizing: border-box;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.calendar-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: block;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-align: center;
+}
+
+@media (max-width: 600px) {
+    .calendar-card {
+        padding: 0.8rem;
+        border-radius: 14px;
+    }
+    .calendar-grid {
+        display: grid !important;
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+        gap: 4px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .calendar-header-cell {
+        padding: 4px 1px;
+        font-size: 0.62rem;
+        letter-spacing: 0;
+    }
+    .calendar-day-cell {
+        padding: 4px 2px;
+        min-height: 46px;
+        border-radius: 8px;
+    }
+    .calendar-day-num {
+        font-size: 0.75rem !important;
+    }
+    .calendar-badge {
+        font-size: 0.6rem !important;
+        line-height: 1.1;
+        margin-top: 1px;
+    }
+    .calendar-legend-pill {
+        padding: 2px 6px !important;
+        font-size: 0.68rem !important;
+    }
+    .calendar-footer-summary {
+        padding: 0.6rem 0.8rem !important;
+        font-size: 0.75rem !important;
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 6px !important;
+    }
+}
 </style>
 """
