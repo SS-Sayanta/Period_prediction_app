@@ -360,9 +360,887 @@
       .toast-wrap { bottom: 12px !important; right: 12px !important; left: 12px !important; }
       .toast-wrap > div { width: 100%; }
     }
+
+    /* ── Smart Product Recommender Widget ───────────────────────── */
+    .recommender-chip {
+      background: rgba(30,41,59,0.8);
+      border: 1px solid rgba(167,139,250,0.3);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #c4b5fd;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .recommender-chip:hover {
+      background: rgba(167,139,250,0.2);
+      border-color: rgba(167,139,250,0.65);
+      color: #ede9fe;
+      box-shadow: 0 0 18px -4px rgba(167,139,250,0.45);
+      transform: translateY(-1px);
+    }
+    .recommender-chip.active {
+      background: rgba(167,139,250,0.25);
+      border-color: #a78bfa;
+      color: #ede9fe;
+      box-shadow: 0 0 18px -4px rgba(167,139,250,0.5);
+    }
+    .rec-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(52,211,153,0.12);
+      border: 1px solid rgba(52,211,153,0.35);
+      color: #34d399;
+      border-radius: 7px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .avoid-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(251,113,133,0.1);
+      border: 1px solid rgba(251,113,133,0.3);
+      color: #fb7185;
+      border-radius: 7px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .rec-response-box {
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(167,139,250,0.2);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #e2e8f0;
+      word-break: break-word;
+    }
+    .rec-response-box p { margin: 0 0 8px; }
+    .rec-response-box p:last-child { margin-bottom: 0; }
+    .rec-response-box ul { margin: 4px 0 8px 18px; list-style: disc; }
+    .rec-response-box li { margin-bottom: 5px; }
+    .rec-response-box strong { color: #c4b5fd; font-weight: 600; }
+    .rec-response-box em { color: #94a3b8; }
+    .rec-response-box h2, .rec-response-box h3 { color: #c4b5fd; font-weight: 700; margin: 8px 0 4px; }
+
+    /* ── Splash Screen ─────────────────────────────────────────────────── */
+    #femcare-splash {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 30% 20%, #1a0a2e 0%, #0d0d1a 55%, #0a0f1e 100%);
+      transition: opacity 0.7s ease, visibility 0.7s ease;
+    }
+    #femcare-splash.splash-hidden {
+      opacity: 0; visibility: hidden; pointer-events: none;
+    }
+
+    /* Orbital ring spinner */
+    .splash-ring {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: #ec4899;
+      border-right-color: #a855f7;
+      animation: splashSpin 1.1s cubic-bezier(0.6,0.2,0.4,0.8) infinite;
+      position: relative; margin-bottom: 28px;
+    }
+    .splash-ring::before {
+      content: '';
+      position: absolute; inset: 6px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-bottom-color: #f472b6;
+      animation: splashSpin 1.7s linear infinite reverse;
+    }
+    .splash-ring::after {
+      content: '';
+      position: absolute; inset: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(168,85,247,0.25);
+    }
+    /* Heart inside ring */
+    .splash-heart {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 22px; line-height: 1;
+      animation: splashHeartbeat 1.4s ease-in-out infinite;
+      filter: drop-shadow(0 0 8px #ec4899);
+    }
+    @keyframes splashSpin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes splashHeartbeat {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50%       { transform: translate(-50%, -50%) scale(1.18); }
+    }
+
+    /* Brand wordmark */
+    .splash-brand {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(22px, 5vw, 30px);
+      font-weight: 800;
+      background: linear-gradient(90deg, #f9a8d4, #c084fc, #818cf8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px; margin-bottom: 8px;
+    }
+    /* Tagline carousel */
+    .splash-tagline {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 400;
+      color: #94a3b8; min-height: 20px;
+      transition: opacity 0.4s ease;
+    }
+    .splash-tagline.fade { opacity: 0; }
+
+    /* Status row */
+    .splash-status {
+      margin-top: 32px;
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px; color: #64748b;
+    }
+    .splash-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #ec4899;
+      animation: splashPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes splashPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* Progress bar */
+    .splash-bar-wrap {
+      margin-top: 14px;
+      width: min(260px, 70vw);
+      height: 3px; border-radius: 99px;
+      background: rgba(255,255,255,0.07);
+      overflow: hidden;
+    }
+    .splash-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #ec4899, #a855f7);
+      border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── Auth Overlay ──────────────────────────────────────────────────── */
+    #femcare-auth {
+      position: fixed; inset: 0; z-index: 8888;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 40% 30%, #1a0a2e 0%, #0b0e17 60%, #080b14 100%);
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+      padding: 16px;
+    }
+    #femcare-auth.auth-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    .auth-card {
+      width: 100%; max-width: 420px;
+      background: linear-gradient(145deg, rgba(26,10,46,0.9), rgba(15,10,30,0.95));
+      border: 1px solid rgba(236,72,153,0.2);
+      border-radius: 24px;
+      padding: 36px 32px 32px;
+      box-shadow: 0 0 60px rgba(168,85,247,0.12), 0 0 0 1px rgba(255,255,255,0.04);
+      backdrop-filter: blur(24px);
+      animation: authCardIn 0.45s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    @keyframes authCardIn {
+      from { opacity: 0; transform: translateY(28px) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .auth-logo-ring {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; margin: 0 auto 18px;
+      box-shadow: 0 0 24px rgba(236,72,153,0.4);
+      animation: splashHeartbeat 2s ease-in-out infinite;
+    }
+    .auth-title {
+      font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800;
+      text-align: center; margin-bottom: 4px;
+      background: linear-gradient(90deg, #f9a8d4, #c084fc, #818cf8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .auth-subtitle {
+      font-family: 'Inter', sans-serif; font-size: 12px; color: #64748b;
+      text-align: center; margin-bottom: 28px;
+    }
+
+    /* Tabs */
+    .auth-tabs {
+      display: flex; gap: 4px; background: rgba(255,255,255,0.04);
+      border-radius: 12px; padding: 4px; margin-bottom: 24px;
+    }
+    .auth-tab {
+      flex: 1; padding: 8px; border: none; background: transparent;
+      color: #64748b; font-family: 'Inter', sans-serif; font-size: 12px;
+      font-weight: 600; border-radius: 9px; cursor: pointer; transition: all 0.2s;
+    }
+    .auth-tab.active {
+      background: linear-gradient(135deg, #be185d, #7c3aed);
+      color: #fff; box-shadow: 0 2px 12px rgba(190,24,93,0.35);
+    }
+
+    /* Inputs */
+    .auth-field { margin-bottom: 14px; }
+    .auth-label {
+      display: block; font-size: 11px; font-weight: 600;
+      color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .auth-input-wrap { position: relative; }
+    .auth-input {
+      width: 100%; box-sizing: border-box;
+      background: rgba(15,23,42,0.8); border: 1px solid rgba(100,116,139,0.3);
+      border-radius: 12px; padding: 11px 14px; padding-right: 42px;
+      font-family: 'Inter', sans-serif; font-size: 13px; color: #e2e8f0;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .auth-input:focus {
+      border-color: #a855f7;
+      box-shadow: 0 0 0 3px rgba(168,85,247,0.15);
+    }
+    .auth-eye {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: #475569; cursor: pointer;
+      font-size: 14px; padding: 2px; line-height: 1;
+    }
+
+    /* OTP boxes */
+    .otp-grid {
+      display: flex; gap: 8px; justify-content: center; margin: 20px 0;
+    }
+    .otp-box {
+      width: 46px; height: 52px;
+      background: rgba(15,23,42,0.85);
+      border: 1.5px solid rgba(100,116,139,0.3);
+      border-radius: 12px;
+      font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700;
+      color: #f9a8d4; text-align: center;
+      outline: none; caret-color: #ec4899;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .otp-box:focus {
+      border-color: #ec4899;
+      box-shadow: 0 0 0 3px rgba(236,72,153,0.2);
+    }
+
+    /* Buttons */
+    .auth-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 13px;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.2s, transform 0.15s;
+      background: linear-gradient(135deg, #be185d, #7c3aed);
+      color: #fff; margin-top: 8px;
+      box-shadow: 0 4px 18px rgba(190,24,93,0.3);
+    }
+    .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .auth-btn:not(:disabled):hover { opacity: 0.92; transform: translateY(-1px); }
+    .auth-btn-ghost {
+      width: 100%; padding: 10px; border: 1px solid rgba(100,116,139,0.3);
+      border-radius: 13px; background: transparent; color: #94a3b8;
+      font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+      cursor: pointer; margin-top: 8px; transition: background 0.2s;
+    }
+    .auth-btn-ghost:hover { background: rgba(255,255,255,0.05); }
+
+    /* Links */
+    .auth-link {
+      background: none; border: none; color: #c084fc; font-size: 12px;
+      cursor: pointer; text-decoration: underline; padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+    .auth-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .auth-check-wrap { display: flex; align-items: center; gap: 6px; }
+    .auth-check-wrap input { accent-color: #ec4899; }
+    .auth-check-wrap label { font-size: 12px; color: #64748b; }
+
+    /* Error / info messages */
+    .auth-msg {
+      padding: 10px 14px; border-radius: 10px; font-size: 12px;
+      margin-bottom: 12px; display: none;
+    }
+    .auth-msg.show { display: block; }
+    .auth-msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+    .auth-msg.info  { background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); color: #c4b5fd; }
+    .auth-msg.ok    { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: #86efac; }
+
+    /* Timer */
+    .auth-timer { text-align: center; font-size: 12px; color: #64748b; margin-top: 14px; }
+    .auth-timer span { color: #f9a8d4; font-weight: 700; }
+
+    /* Welcome toast */
+    #auth-toast {
+      position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-80px);
+      background: linear-gradient(135deg, #be185d, #7c3aed);
+      color: #fff; border-radius: 14px; padding: 14px 24px;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+      box-shadow: 0 8px 32px rgba(190,24,93,0.4);
+      z-index: 99999; white-space: nowrap;
+      transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.45s;
+      opacity: 0;
+    }
+    #auth-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
 </head>
 <body class="min-h-screen antialiased selection:bg-pink-500 selection:text-white">
+
+  <!-- ╔══════════════════════════════════╗ -->
+  <!-- ║        SPLASH / LOADING SCREEN   ║ -->
+  <!-- ╚══════════════════════════════════╝ -->
+  <div id="femcare-splash" role="status" aria-live="polite">
+    <div class="splash-ring">
+      <span class="splash-heart">❤️</span>
+    </div>
+    <div class="splash-brand">FemCare AI</div>
+    <div class="splash-tagline" id="splashTagline">FemCare AI is getting ready for you...</div>
+    <div class="splash-status">
+      <div class="splash-dot"></div>
+      <span id="splashStatus">Connecting to secure server...</span>
+    </div>
+    <div class="splash-bar-wrap">
+      <div class="splash-bar" id="splashBar"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      /* ── Tagline carousel ───────────────────────────── */
+      var TAGLINES = [
+        'FemCare AI is getting ready for you...',
+        'Warming up your health insights...',
+        'Loading your personalised ML models...',
+        'Almost there — syncing your cycle data...',
+        'Your wellness companion is waking up... 💜'
+      ];
+      var tagEl   = document.getElementById('splashTagline');
+      var statusEl = document.getElementById('splashStatus');
+      var barEl   = document.getElementById('splashBar');
+      var tagIdx  = 0;
+
+      var tagTimer = setInterval(function () {
+        tagEl.classList.add('fade');
+        setTimeout(function () {
+          tagIdx = (tagIdx + 1) % TAGLINES.length;
+          tagEl.textContent = TAGLINES[tagIdx];
+          tagEl.classList.remove('fade');
+        }, 420);
+      }, 2500);
+
+      /* ── Fake progress bar (grows until server responds) ── */
+      var progress  = 8;
+      var barTimer  = setInterval(function () {
+        /* Slow asymptotic crawl — never quite reaches 100 */
+        progress += (96 - progress) * 0.04;
+        barEl.style.width = Math.min(progress, 96).toFixed(1) + '%';
+      }, 300);
+
+      /* ── Backend readiness polling ──────────────────── */
+      var POLL_URL     = '/api/health';
+      var POLL_MS      = 2500;   /* interval between pings          */
+      var MAX_WAIT_MS  = 90000;  /* give up after 90 s (safety net) */
+      var started      = Date.now();
+      var pollTimer;
+
+      function dismissSplash() {
+        clearInterval(tagTimer);
+        clearInterval(barTimer);
+        clearInterval(pollTimer);
+        barEl.style.width = '100%';
+        statusEl.textContent = 'Server ready — launching app!';
+        setTimeout(function () {
+          var splash = document.getElementById('femcare-splash');
+          if (splash) splash.classList.add('splash-hidden');
+          /* Remove from DOM entirely after transition */
+          setTimeout(function () {
+            if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+          }, 800);
+        }, 400);
+      }
+
+      function ping() {
+        if (Date.now() - started > MAX_WAIT_MS) {
+          /* Timed-out — dismiss anyway so the user isn't stuck forever */
+          dismissSplash();
+          return;
+        }
+        fetch(POLL_URL, { method: 'GET', cache: 'no-store' })
+          .then(function (r) {
+            if (r.ok) {
+              dismissSplash();
+            } else {
+              statusEl.textContent = 'Server starting up... (' + r.status + ')';
+            }
+          })
+          .catch(function () {
+            statusEl.textContent = 'Waiting for server...';
+          });
+      }
+
+      /* First ping immediately; then poll on interval */
+      ping();
+      pollTimer = setInterval(ping, POLL_MS);
+    })();
+  </script>
+
+  <!-- ╔══════════════════════════════════════════╗ -->
+  <!-- ║   AUTH OVERLAY — Login / Signup / OTP   ║ -->
+  <!-- ╚══════════════════════════════════════════╝ -->
+  <div id="auth-toast"></div>
+
+  <div id="femcare-auth">
+    <div class="auth-card" id="authCard">
+
+      <!-- Logo -->
+      <div class="auth-logo-ring">❤️</div>
+      <div class="auth-title">FemCare AI</div>
+      <div class="auth-subtitle" id="authSubtitle">Your personal health companion</div>
+
+      <!-- Message banner -->
+      <div class="auth-msg" id="authMsg"></div>
+
+      <!-- ══ VIEW: LOGIN ══ -->
+      <div id="viewLogin">
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="authShowTab('login')">Sign In</button>
+          <button class="auth-tab" onclick="authShowTab('register')">Register</button>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Email</label>
+          <div class="auth-input-wrap">
+            <input id="loginEmail" type="email" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+          <div class="auth-input-wrap">
+            <input id="loginPass" type="password" class="auth-input" placeholder="••••••••">
+            <button class="auth-eye" onclick="authToggleEye('loginPass',this)" title="Show/Hide">👁</button>
+          </div>
+        </div>
+        <div class="auth-row">
+          <div class="auth-check-wrap">
+            <input type="checkbox" id="rememberMe">
+            <label for="rememberMe">Remember me</label>
+          </div>
+          <button class="auth-link" onclick="authShowView('forgot')">Forgot password?</button>
+        </div>
+        <button class="auth-btn" id="loginBtn" onclick="authDoLogin()">Sign In →</button>
+        <button class="auth-btn-ghost" onclick="authShowTab('register')">New to FemCare? Create account</button>
+      </div>
+
+      <!-- ══ VIEW: REGISTER ══ -->
+      <div id="viewRegister" style="display:none">
+        <div class="auth-tabs">
+          <button class="auth-tab" onclick="authShowTab('login')">Sign In</button>
+          <button class="auth-tab active">Register</button>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Full Name</label>
+          <div class="auth-input-wrap">
+            <input id="regName" type="text" class="auth-input" placeholder="Your name" style="padding-right:14px">
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Email</label>
+          <div class="auth-input-wrap">
+            <input id="regEmail" type="email" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+          <div class="auth-input-wrap">
+            <input id="regPass" type="password" class="auth-input" placeholder="Min. 6 characters">
+            <button class="auth-eye" onclick="authToggleEye('regPass',this)" title="Show/Hide">👁</button>
+          </div>
+        </div>
+        <button class="auth-btn" id="regBtn" onclick="authSendRegOTP()">Continue & Verify Email →</button>
+        <button class="auth-btn-ghost" onclick="authShowTab('login')">Already have an account? Sign in</button>
+      </div>
+
+      <!-- ══ VIEW: OTP ══ -->
+      <div id="viewOTP" style="display:none">
+        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;">Enter the 6-digit code sent to</p>
+        <p style="text-align:center;font-size:13px;color:#f9a8d4;font-weight:700;margin:0 0 2px;" id="otpEmailDisplay"></p>
+        <div class="otp-grid" id="otpGrid">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        </div>
+        <button class="auth-btn" id="verifyOTPBtn" onclick="authVerifyOTP()">Verify & Activate Account ✓</button>
+        <div class="auth-timer">Resend in <span id="otpTimer">120</span>s &nbsp;|&nbsp;
+          <button class="auth-link" id="resendBtn" onclick="authResendOTP()" disabled style="opacity:0.4">Resend OTP</button>
+        </div>
+        <button class="auth-btn-ghost" onclick="authShowView('register')" style="margin-top:10px">← Back</button>
+      </div>
+
+      <!-- ══ VIEW: FORGOT ══ -->
+      <div id="viewForgot" style="display:none">
+        <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;text-align:center;">Enter your email to receive a reset code.</p>
+        <div class="auth-field">
+          <label class="auth-label">Email</label>
+          <div class="auth-input-wrap">
+            <input id="fpEmail" type="email" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
+          </div>
+        </div>
+        <button class="auth-btn" id="fpSendBtn" onclick="authSendResetOTP()">Send Reset Code →</button>
+        <button class="auth-btn-ghost" onclick="authShowView('login')">← Back to Sign In</button>
+      </div>
+
+      <!-- ══ VIEW: RESET OTP ══ -->
+      <div id="viewResetOTP" style="display:none">
+        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;">Reset code sent to</p>
+        <p style="text-align:center;font-size:13px;color:#f9a8d4;font-weight:700;margin:0 0 2px;" id="fpEmailDisplay"></p>
+        <div class="otp-grid" id="resetOTPGrid">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">New Password</label>
+          <div class="auth-input-wrap">
+            <input id="newPass" type="password" class="auth-input" placeholder="Min. 6 characters">
+            <button class="auth-eye" onclick="authToggleEye('newPass',this)">👁</button>
+          </div>
+        </div>
+        <button class="auth-btn" id="resetBtn" onclick="authResetPassword()">Update Password →</button>
+        <div class="auth-timer">Resend in <span id="fpTimer">120</span>s &nbsp;|&nbsp;
+          <button class="auth-link" id="fpResendBtn" onclick="authSendResetOTP(true)" disabled style="opacity:0.4">Resend</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    /* ── State ── */
+    var _otpPurpose = 'registration';
+    var _pendingEmail = '';
+    var _pendingName  = '';
+    var _timerID = null;
+    var _devOTP  = '';
+
+    /* ── Helpers ── */
+    function $(id){ return document.getElementById(id); }
+
+    function showMsg(text, type) {
+      var el = $('authMsg');
+      el.textContent = text;
+      el.className = 'auth-msg show ' + (type||'info');
+    }
+    function clearMsg(){ var el=$('authMsg'); el.className='auth-msg'; el.textContent=''; }
+
+    function setLoading(btnId, loading, label) {
+      var b = $(btnId);
+      if (!b) return;
+      b.disabled = loading;
+      b.textContent = loading ? '...' : label;
+    }
+
+    function authToggleEye(inputId, btn) {
+      var inp = $(inputId);
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+    }
+    window.authToggleEye = authToggleEye;
+
+    function showToast(text) {
+      var t = $('auth-toast');
+      t.textContent = text;
+      t.classList.add('show');
+      setTimeout(function(){ t.classList.remove('show'); }, 3500);
+    }
+
+    /* ── View router ── */
+    var VIEWS = ['viewLogin','viewRegister','viewOTP','viewForgot','viewResetOTP'];
+    function authShowView(name) {
+      clearMsg();
+      VIEWS.forEach(function(v){
+        $(v).style.display = v === 'view' + name.charAt(0).toUpperCase() + name.slice(1) ? '' : 'none';
+      });
+      var subtitles = {
+        login:    'Welcome back 💜',
+        register: 'Create your account',
+        OTP:      'Verify your email',
+        forgot:   'Forgot your password?',
+        resetOTP: 'Reset your password'
+      };
+      $('authSubtitle').textContent = subtitles[name] || 'Your personal health companion';
+    }
+    window.authShowView = authShowView;
+
+    function authShowTab(tab) {
+      authShowView(tab);
+    }
+    window.authShowTab = authShowTab;
+
+    /* ── OTP grid keyboard nav ── */
+    function wireOTPGrid(gridId) {
+      var boxes = Array.from($(gridId).querySelectorAll('.otp-box'));
+      boxes.forEach(function(box, i) {
+        box.addEventListener('input', function() {
+          box.value = box.value.replace(/\D/g,'').slice(-1);
+          if (box.value && i < boxes.length - 1) boxes[i+1].focus();
+        });
+        box.addEventListener('keydown', function(e) {
+          if (e.key === 'Backspace' && !box.value && i > 0) boxes[i-1].focus();
+        });
+        box.addEventListener('paste', function(e) {
+          var d = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');
+          boxes.forEach(function(b,j){ b.value = d[j]||''; });
+          boxes[Math.min(d.length, boxes.length-1)].focus();
+          e.preventDefault();
+        });
+      });
+    }
+    wireOTPGrid('otpGrid');
+    wireOTPGrid('resetOTPGrid');
+
+    function readOTP(gridId) {
+      return Array.from($(gridId).querySelectorAll('.otp-box')).map(function(b){return b.value;}).join('');
+    }
+    function clearOTP(gridId) {
+      $(gridId).querySelectorAll('.otp-box').forEach(function(b){b.value='';});
+    }
+
+    /* ── Countdown timer ── */
+    function startTimer(displayId, resendBtnId, seconds) {
+      clearInterval(_timerID);
+      var rem = seconds;
+      var disp = $(displayId);
+      var btn  = $(resendBtnId);
+      btn.disabled = true; btn.style.opacity = '0.4';
+      _timerID = setInterval(function() {
+        rem--;
+        disp.textContent = rem;
+        if (rem <= 0) {
+          clearInterval(_timerID);
+          btn.disabled = false; btn.style.opacity = '1';
+        }
+      }, 1000);
+    }
+
+    /* ── Session ── */
+    function saveSession(token, name, remember) {
+      var store = remember ? localStorage : sessionStorage;
+      store.setItem('fc_token', token);
+      store.setItem('fc_name',  name);
+    }
+    function loadSession() {
+      return localStorage.getItem('fc_token') || sessionStorage.getItem('fc_token');
+    }
+    function getStoredName() {
+      return localStorage.getItem('fc_name') || sessionStorage.getItem('fc_name') || 'there';
+    }
+
+    /* ── Dismiss auth overlay & reveal app ── */
+    function revealApp(name) {
+      showToast('💜 Welcome, ' + name + '! FemCare AI is ready.');
+      var auth = $('femcare-auth');
+      auth.classList.add('auth-hidden');
+      setTimeout(function(){ if (auth.parentNode) auth.parentNode.removeChild(auth); }, 700);
+    }
+
+    /* ── Auto-login if session exists ── */
+    var existingToken = loadSession();
+    if (existingToken) {
+      fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + existingToken } })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){
+          if (d && d.success) { revealApp(d.name || getStoredName()); }
+          else { localStorage.removeItem('fc_token'); sessionStorage.removeItem('fc_token'); }
+        })
+        .catch(function(){ /* offline — still show auth */ });
+    }
+
+    /* ═══════════════════ AUTH ACTIONS ═══════════════════ */
+
+    /* LOGIN */
+    window.authDoLogin = function() {
+      clearMsg();
+      var email = $('loginEmail').value.trim();
+      var pass  = $('loginPass').value;
+      if (!email || !pass) { showMsg('Please fill in all fields.', 'error'); return; }
+      setLoading('loginBtn', true, 'Signing in →');
+      fetch('/api/auth/login', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: email, password: pass })
+      })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res) {
+        if (res.ok && res.d.success) {
+          saveSession(res.d.token, res.d.name, $('rememberMe').checked);
+          revealApp(res.d.name);
+        } else {
+          showMsg(res.d.detail || 'Login failed. Please check your credentials.', 'error');
+        }
+      })
+      .catch(function(){ showMsg('Network error. Please try again.', 'error'); })
+      .finally(function(){ setLoading('loginBtn', false, 'Sign In →'); });
+    };
+
+    /* SEND REGISTRATION OTP */
+    window.authSendRegOTP = function() {
+      clearMsg();
+      var name  = $('regName').value.trim();
+      var email = $('regEmail').value.trim();
+      var pass  = $('regPass').value;
+      if (!name || !email || !pass) { showMsg('Please fill in all fields.', 'error'); return; }
+      if (pass.length < 6) { showMsg('Password must be at least 6 characters.', 'error'); return; }
+      _pendingEmail = email; _pendingName = name; _otpPurpose = 'registration';
+      setLoading('regBtn', true, 'Sending OTP...');
+      fetch('/api/auth/send-otp', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: email, name: name, purpose: 'registration' })
+      })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res) {
+        if (res.ok) {
+          _devOTP = res.d.dev_otp || '';
+          if (_devOTP) showMsg('DEV MODE — OTP: ' + _devOTP + ' (check server console)', 'info');
+          $('otpEmailDisplay').textContent = email;
+          clearOTP('otpGrid');
+          authShowView('OTP');
+          startTimer('otpTimer', 'resendBtn', 120);
+          $('otpGrid').querySelector('.otp-box').focus();
+        } else {
+          showMsg(res.d.detail || 'Failed to send OTP.', 'error');
+        }
+      })
+      .catch(function(){ showMsg('Network error.', 'error'); })
+      .finally(function(){ setLoading('regBtn', false, 'Continue & Verify Email →'); });
+    };
+
+    /* RESEND OTP */
+    window.authResendOTP = function() {
+      clearMsg();
+      fetch('/api/auth/send-otp', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: _pendingEmail, name: _pendingName, purpose: _otpPurpose })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        _devOTP = d.dev_otp || '';
+        if (_devOTP) showMsg('DEV — New OTP: ' + _devOTP, 'info');
+        else showMsg('New OTP sent!', 'ok');
+        startTimer('otpTimer', 'resendBtn', 120);
+      })
+      .catch(function(){ showMsg('Failed to resend.','error'); });
+    };
+
+    /* VERIFY REGISTRATION OTP */
+    window.authVerifyOTP = function() {
+      clearMsg();
+      var otp  = readOTP('otpGrid');
+      var pass = $('regPass').value;
+      if (otp.length < 6) { showMsg('Please enter all 6 digits.', 'error'); return; }
+      setLoading('verifyOTPBtn', true, 'Verifying...');
+      fetch('/api/auth/verify-otp', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: _pendingEmail, otp: otp, password: pass })
+      })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res) {
+        if (res.ok && res.d.success) {
+          saveSession(res.d.token, res.d.name, false);
+          revealApp(res.d.name);
+        } else {
+          showMsg(res.d.detail || 'Incorrect OTP. Try again.', 'error');
+        }
+      })
+      .catch(function(){ showMsg('Network error.','error'); })
+      .finally(function(){ setLoading('verifyOTPBtn', false, 'Verify & Activate Account ✓'); });
+    };
+
+    /* FORGOT PASSWORD — SEND RESET OTP */
+    window.authSendResetOTP = function(isResend) {
+      clearMsg();
+      var email = isResend ? _pendingEmail : $('fpEmail').value.trim();
+      if (!email) { showMsg('Please enter your email.', 'error'); return; }
+      _pendingEmail = email; _otpPurpose = 'reset';
+      setLoading('fpSendBtn', true, 'Sending...');
+      fetch('/api/auth/send-otp', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: email, purpose: 'reset' })
+      })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res) {
+        if (res.ok) {
+          _devOTP = res.d.dev_otp || '';
+          $('fpEmailDisplay').textContent = email;
+          clearOTP('resetOTPGrid');
+          if (_devOTP) showMsg('DEV — Reset OTP: ' + _devOTP, 'info');
+          authShowView('resetOTP');
+          startTimer('fpTimer', 'fpResendBtn', 120);
+          $('resetOTPGrid').querySelector('.otp-box').focus();
+        } else {
+          showMsg(res.d.detail || 'Failed to send reset code.', 'error');
+        }
+      })
+      .catch(function(){ showMsg('Network error.','error'); })
+      .finally(function(){ setLoading('fpSendBtn', false, 'Send Reset Code →'); });
+    };
+
+    /* RESET PASSWORD */
+    window.authResetPassword = function() {
+      clearMsg();
+      var otp  = readOTP('resetOTPGrid');
+      var pass = $('newPass').value;
+      if (otp.length < 6) { showMsg('Please enter the 6-digit code.', 'error'); return; }
+      if (pass.length < 6) { showMsg('Password must be at least 6 characters.', 'error'); return; }
+      setLoading('resetBtn', true, 'Updating...');
+      fetch('/api/auth/reset-password', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: _pendingEmail, otp: otp, new_password: pass })
+      })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res) {
+        if (res.ok && res.d.success) {
+          showMsg('Password updated! Please sign in.', 'ok');
+          setTimeout(function(){ authShowView('login'); }, 1800);
+        } else {
+          showMsg(res.d.detail || 'Failed to reset password.', 'error');
+        }
+      })
+      .catch(function(){ showMsg('Network error.','error'); })
+      .finally(function(){ setLoading('resetBtn', false, 'Update Password →'); });
+    };
+
+    /* Enter-key shortcuts */
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      var active = document.activeElement;
+      if (!active || !active.classList.contains('auth-input')) return;
+      if ($('viewLogin').style.display !== 'none') authDoLogin();
+      else if ($('viewRegister').style.display !== 'none') authSendRegOTP();
+      else if ($('viewForgot').style.display !== 'none') authSendResetOTP();
+    });
+
+  })();
+  </script>
+
   <div id="root"></div>
 
   <!-- REACT APPLICATION SOURCE -->
@@ -458,7 +1336,30 @@
         analyticsTitle: "Health Analytics & Model Accuracy",
         quickLogFeedbackTitle: "Quick-Log Symptoms & User Feedback",
         exportTitle: "Dataset & Medical Report Export",
-        exportPdfBtn: "📄 Download Clinical Summary PDF"
+        exportPdfBtn: "📄 Download Clinical Summary PDF",
+        navRecommender: "Product Recommender",
+        recTitle: "Smart Product Recommender",
+        recSubtitle: "Medical-grade, evidence-based sanitary product guidance powered by AI + clinical knowledge base.",
+        recBadgeAI: "AI + Medical KB",
+        recQuickSelectHeader: "Quick Select Your Concern",
+        recChipSensitive: "Sensitive Skin / Rash",
+        recChipHeavy: "Heavy Flow / Overnight",
+        recChipSports: "Active / Sports",
+        recChipGeneral: "General Guidance",
+        recPlaceholder: 'Describe your concern (e.g. "itching, heavy flow, active lifestyle")...',
+        recAnalyseBtn: "Analyse",
+        recAnalysing: "Analysing your concern...",
+        recAnalysingSub: "Matching clinical KB + querying AI model",
+        recMatchedCat: "Matched Clinical Category",
+        recRecommended: "Recommended",
+        recAvoid: "Avoid",
+        recMedicalNote: "Medical Note",
+        recAIAnalysisTitle: "FemCare AI Analysis",
+        recAIBadge: "Groq / Llama-3 enriched clinical narrative",
+        recNewBtn: "New Recommendation",
+        recDiscussBtn: "Discuss with AI Assistant",
+        recEmptyTitle: "Select a concern or type your question above",
+        recEmptyDesc: "Our AI cross-references a medical-grade knowledge base to give you personalised, evidence-backed sanitary product recommendations — completely tailored to your cycle phase and symptoms."
       },
       bn: {
         appName: "ফেমকেয়ার AI",
@@ -533,7 +1434,30 @@
         analyticsTitle: "স্বাস্থ্য অ্যানালিটিক্স ও মডেল নির্ভরতা",
         quickLogFeedbackTitle: "লক্ষণ লগিং ও ব্যবহারকারীর প্রতিক্রিয়া",
         exportTitle: "ডেটাবেস ও ডক্টর রিপোর্ট এক্সপোর্ট",
-        exportPdfBtn: "📄 ক্লিনিক্যাল রিপোর্ট PDF ডাউনলোড করুন"
+        exportPdfBtn: "📄 ক্লিনিক্যাল রিপোর্ট PDF ডাউনলোড করুন",
+        navRecommender: "প্রোডাক্ট সুপারিশকারী",
+        recTitle: "স্মার্ট প্রোডাক্ট সুপারিশকারী",
+        recSubtitle: "AI এবং ক্লিনিক্যাল নলেজ বেস চালিত চিকিৎসা-মানসম্মত স্যানিটারি প্রোডাক্ট নির্দেশিকা।",
+        recBadgeAI: "AI + মেডিকেল নলেজ বেস",
+        recQuickSelectHeader: "আপনার সমস্যা দ্রুত নির্বাচন করুন",
+        recChipSensitive: "সংবেদনশীল ত্বক / র‍্যাশ",
+        recChipHeavy: "ভারী প্রবাহ / নাইট প্রটেকশন",
+        recChipSports: "সক্রিয় / খেলাধুলা",
+        recChipGeneral: "সাধারণ নির্দেশিকা",
+        recPlaceholder: 'আপনার সমস্যা বিস্তারিত লিখুন (যেমন: "চুলকানি, ভারী প্রবাহ, খেলাধুলা")...',
+        recAnalyseBtn: "বিশ্লেষণ করুন",
+        recAnalysing: "আপনার সমস্যা বিশ্লেষণ করা হচ্ছে...",
+        recAnalysingSub: "ক্লিনিক্যাল নলেজ বেস মেলানো হচ্ছে ও AI মডেল কোয়েরি করা হচ্ছে",
+        recMatchedCat: "মিলে যাওয়া ক্লিনিক্যাল বিভাগ",
+        recRecommended: "সুপারিশকৃত",
+        recAvoid: "বর্জনীয়",
+        recMedicalNote: "চিকিৎসকের পরামর্শ",
+        recAIAnalysisTitle: "ফেমকেয়ার AI বিশ্লেষণ",
+        recAIBadge: "Groq / Llama-3 সমৃদ্ধ ক্লিনিক্যাল বিবরণ",
+        recNewBtn: "নতুন সুপারিশ",
+        recDiscussBtn: "AI সহকারীর সাথে আলোচনা করুন",
+        recEmptyTitle: "উপরে একটি সমস্যা নির্বাচন করুন বা প্রশ্ন টাইপ করুন",
+        recEmptyDesc: "আমাদের AI আপনার সাইকেলের পর্যায় ও লক্ষণের সাথে সামঞ্জস্য রেখে ব্যক্তিগতকৃত ও বৈজ্ঞানিক স্যানিটারি প্রোডাক্ট সুপারিশ প্রদান করে।"
       },
       hi: {
         appName: "फेमकेयर AI",
@@ -608,7 +1532,30 @@
         analyticsTitle: "स्वास्थ्य एनालिटिक्स और मॉडल सटीकता",
         quickLogFeedbackTitle: "लक्षण लॉगिंग और उपयोगकर्ता फीडबैक",
         exportTitle: "डेटासेट और मेडिकल रिपोर्ट एक्सपोर्ट",
-        exportPdfBtn: "📄 क्लिनिकल सारांश PDF डाउनलोड करें"
+        exportPdfBtn: "📄 क्लिनिकल सारांश PDF डाउनलोड करें",
+        navRecommender: "उत्पाद अनुशंसा प्रणाली",
+        recTitle: "स्मार्ट उत्पाद अनुशंसा प्रणाली",
+        recSubtitle: "AI और नैदानिक ज्ञान कोष द्वारा संचालित चिकित्सा-स्तरीय सेनेटरी उत्पाद मार्गदर्शन।",
+        recBadgeAI: "AI + मेडिकल नॉलेज बेस",
+        recQuickSelectHeader: "अपनी चिंता तुरंत चुनें",
+        recChipSensitive: "संवेदनशील त्वचा / रैश",
+        recChipHeavy: "भारी प्रवाह / ओवरनाइट",
+        recChipSports: "सक्रिय / खेलकूद",
+        recChipGeneral: "सामान्य मार्गदर्शन",
+        recPlaceholder: 'अपनी चिंता का वर्णन करें (जैसे: "खुजली, भारी प्रवाह, सक्रिय जीवन शैली")...',
+        recAnalyseBtn: "विश्लेषण करें",
+        recAnalysing: "आपकी चिंता का विश्लेषण किया जा रहा है...",
+        recAnalysingSub: "नैदानिक ज्ञान कोष का मिलान और AI मॉडल से पूछताछ की जा रही है",
+        recMatchedCat: "मिलान की गई नैदानिक श्रेणी",
+        recRecommended: "अनुशंसित",
+        recAvoid: "बचें",
+        recMedicalNote: "चिकित्सीय सलाह",
+        recAIAnalysisTitle: "फेमकेयर AI विश्लेषण",
+        recAIBadge: "Groq / Llama-3 समृद्ध नैदानिक विवरण",
+        recNewBtn: "नई अनुशंसा",
+        recDiscussBtn: "AI सहायक के साथ चर्चा करें",
+        recEmptyTitle: "ऊपर एक चिंता चुनें या अपना प्रश्न टाइप करें",
+        recEmptyDesc: "हमारा AI आपके चक्र के चरण और लक्षणों के अनुसार व्यक्तिगत, साक्ष्य-आधारित सेनेटरी उत्पाद अनुशंसाएं प्रदान करता है।"
       }
     };
 
@@ -818,6 +1765,12 @@
       const [chatMessages, setChatMessages] = useState([]);
       const chatEndRef = React.useRef(null);
 
+      // Smart Product Recommender State
+      const [recommenderQuery, setRecommenderQuery] = useState('');
+      const [recommenderResult, setRecommenderResult] = useState(null);
+      const [isRecommending, setIsRecommending] = useState(false);
+      const [activeChip, setActiveChip] = useState(null);
+
       // Auto-scroll to latest message
       useEffect(() => {
         if (chatEndRef.current) {
@@ -855,6 +1808,42 @@
           setIsAssistantLoading(false);
         }
       };
+
+      const handleRecommend = async (queryText) => {
+        const q = (queryText || recommenderQuery).trim();
+        if (!q) return;
+        setIsRecommending(true);
+        setRecommenderResult(null);
+        try {
+          const res = await fetch('/api/recommend-product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              concern: q,
+              current_phase: overviewData ? overviewData.current_phase : 'Follicular',
+              age: formData.age || 25,
+              lang: currentLang
+            })
+          });
+          const data = await res.json();
+          setRecommenderResult(data);
+        } catch (err) {
+          setRecommenderResult({
+            ai_response: '❌ Could not reach the recommendation service. Please check your connection.',
+            matched_category: 'Error',
+            kb_match: null
+          });
+        } finally {
+          setIsRecommending(false);
+        }
+      };
+
+      const QUICK_CHIPS = [
+        { id: 'sensitive_skin', label: t('recChipSensitive'), emoji: '🌿', query: currentLang === 'bn' ? 'আমার সংবেদনশীল ত্বক ও প্যাড থেকে র‍্যাশ হচ্ছে' : currentLang === 'hi' ? 'मुझे संवेदनशील त्वचा और पैड से रैशेज हो रहे हैं' : 'I have sensitive skin, rash, and itching from my pads' },
+        { id: 'heavy_flow',     label: t('recChipHeavy'),     emoji: '💧', query: currentLang === 'bn' ? 'আমার ভারী প্রবাহ ও রাতে সুরক্ষার প্রয়োজন' : currentLang === 'hi' ? 'मुझे भारी प्रवाह है और रात की सुरक्षा चाहिए' : 'I have heavy flow and need overnight protection' },
+        { id: 'active_sports',  label: t('recChipSports'),    emoji: '⚡', query: currentLang === 'bn' ? 'আমি খেলাধুলা ও সুইমিং করি সক্রিয় জীবনধারা' : currentLang === 'hi' ? 'मैं सक्रिय खेलकूद और तैराकी करती हूं' : 'I have an active lifestyle and do sports and swimming' },
+        { id: 'general',        label: t('recChipGeneral'),   emoji: '💡', query: currentLang === 'bn' ? 'আমার জন্য কোন স্যানিটারি প্রোডাক্ট সবচেয়ে ভালো?' : currentLang === 'hi' ? 'मेरे लिए कौन सा सेनेटरी उत्पाद सबसे अच्छा है?' : 'What sanitary product is best for me in general?' },
+      ];
 
       // Calendar Navigation & Interactive Day Select Handlers
       const handlePrevMonth = () => {
@@ -1018,12 +2007,17 @@
                     { id: 'forecast', icon: '🔮', label: t('navForecast') },
                     { id: 'calendar', icon: '📅', label: t('navCalendar') },
                     { id: 'analytics', icon: '📊', label: t('navAnalytics') },
+                    { id: 'recommender', icon: '🧴', label: t('navRecommender') },
                     { id: 'symptoms', icon: '📝', label: t('navQuickLog') },
                     { id: 'export', icon: '📜', label: t('navExport') }
                   ].map(tab => (
                     <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                       className={`w-full text-left px-3.5 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2.5 transition ${
-                        activeTab === tab.id ? 'bg-pink-500/15 text-pink-400 border border-pink-500/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                        activeTab === tab.id
+                          ? tab.id === 'recommender'
+                            ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+                            : 'bg-pink-500/15 text-pink-400 border border-pink-500/30'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                       }`}>
                       <span>{tab.icon}</span> {tab.label}
                     </button>
@@ -1775,7 +2769,211 @@
               </div>
             )}
 
-            {/* VIEW 5: QUICK-LOG & FEEDBACK */}
+            {/* VIEW 5: SMART PRODUCT RECOMMENDER */}
+            {activeTab === 'recommender' && (
+              <div className="space-y-6 animate-slide-up">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-display text-xl font-bold flex items-center gap-2"
+                      style={{background:'linear-gradient(90deg,#c4b5fd,#a78bfa,#7c3aed)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                      🧴 {t('recTitle')}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">{t('recSubtitle')}</p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 border border-purple-500/35 text-purple-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+                    {t('recBadgeAI')}
+                  </span>
+                </div>
+
+                {/* Quick Select Chips */}
+                <div className="glass-card rounded-2xl p-5 border border-purple-500/20">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span>⚡</span> {t('recQuickSelectHeader')}
+                  </h4>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {QUICK_CHIPS.map(chip => (
+                      <button
+                        key={chip.id}
+                        onClick={() => {
+                          setActiveChip(chip.id);
+                          setRecommenderQuery(chip.query);
+                          handleRecommend(chip.query);
+                        }}
+                        className={`recommender-chip ${activeChip === chip.id ? 'active' : ''}`}
+                      >
+                        <span>{chip.emoji}</span> {chip.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom Query Input */}
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">💬</span>
+                      <input
+                        type="text"
+                        value={recommenderQuery}
+                        onChange={e => setRecommenderQuery(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !isRecommending) { setActiveChip(null); handleRecommend(); } }}
+                        placeholder={t('recPlaceholder')}
+                        className="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-purple-500 transition"
+                      />
+                    </div>
+                    <button
+                      onClick={() => { setActiveChip(null); handleRecommend(); }}
+                      disabled={isRecommending || !recommenderQuery.trim()}
+                      style={{
+                        background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+                        border: 'none', borderRadius: '12px', padding: '10px 18px',
+                        color: '#fff', fontSize: '12px', fontWeight: '700',
+                        cursor: isRecommending ? 'not-allowed' : 'pointer',
+                        opacity: isRecommending ? 0.55 : 1, whiteSpace: 'nowrap',
+                        flexShrink: 0, transition: 'opacity 0.2s'
+                      }}
+                    >
+                      {isRecommending ? '...' : `🔍 ${t('recAnalyseBtn')}`}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Loading State */}
+                {isRecommending && (
+                  <div className="glass-card rounded-2xl p-6 border border-purple-500/20 flex items-center gap-4 animate-slide-up">
+                    <div className="flex gap-1.5">
+                      <span className="typing-dot" style={{background:'#a78bfa'}}></span>
+                      <span className="typing-dot" style={{background:'#a78bfa',animationDelay:'0.2s'}}></span>
+                      <span className="typing-dot" style={{background:'#a78bfa',animationDelay:'0.4s'}}></span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-purple-300">{t('recAnalysing')}</div>
+                      <div className="text-xs text-slate-400">{t('recAnalysingSub')}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Results */}
+                {recommenderResult && !isRecommending && (
+                  <div className="space-y-4 animate-slide-up">
+
+                    {/* Category Badge + KB Match Cards */}
+                    {recommenderResult.kb_match && (
+                      <div className="glass-card rounded-2xl p-5 border border-purple-500/25">
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="text-lg">📋</span>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-purple-400">{t('recMatchedCat')}</div>
+                            <div className="text-base font-bold text-slate-100">{recommenderResult.matched_category}</div>
+                          </div>
+                        </div>
+
+                        {/* Recommended Products */}
+                        <div className="mb-4">
+                          <div className="flex items-center gap-2 mb-2.5">
+                            <span className="rec-badge">✅ {t('recRecommended')}</span>
+                          </div>
+                          <div className="space-y-2">
+                            {recommenderResult.kb_match.recommended.map((r, i) => (
+                              <div key={i} className="bg-emerald-500/8 border border-emerald-500/25 rounded-xl p-3.5">
+                                <div className="text-sm font-bold text-emerald-300">{r.product}</div>
+                                <div className="text-xs text-slate-300 mt-1 leading-relaxed">{r.reason}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Products to Avoid */}
+                        {recommenderResult.kb_match.avoid && recommenderResult.kb_match.avoid.length > 0 && (
+                          <div className="mb-4">
+                            <div className="flex items-center gap-2 mb-2.5">
+                              <span className="avoid-badge">❌ {t('recAvoid')}</span>
+                            </div>
+                            <div className="space-y-2">
+                              {recommenderResult.kb_match.avoid.map((a, i) => (
+                                <div key={i} className="bg-rose-500/8 border border-rose-500/20 rounded-xl p-3">
+                                  <div className="text-sm font-bold text-rose-300">{a.product}</div>
+                                  <div className="text-xs text-slate-400 mt-1">{a.reason}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Medical Note */}
+                        {recommenderResult.kb_match.medical_note && (
+                          <div className="flex items-start gap-2.5 bg-amber-500/8 border border-amber-500/25 rounded-xl p-3">
+                            <span className="text-amber-400 text-base shrink-0">⚠️</span>
+                            <p className="text-xs text-amber-200 leading-relaxed">
+                              <b>{t('recMedicalNote')}:</b> {recommenderResult.kb_match.medical_note}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* AI Narrative Response */}
+                    <div className="glass-card rounded-2xl p-5 border border-purple-500/25">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{background:'linear-gradient(135deg,#7c3aed,#a855f7)'}}>
+                          AI
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-purple-400">{t('recAIAnalysisTitle')}</div>
+                          <div className="text-xs text-slate-400">{t('recAIBadge')}</div>
+                        </div>
+                      </div>
+                      <div
+                        className="rec-response-box"
+                        dangerouslySetInnerHTML={{ __html: parseMarkdown(recommenderResult.ai_response || '') }}
+                      />
+                    </div>
+
+                    {/* Action CTA */}
+                    <div className="flex gap-3 flex-wrap">
+                      <button
+                        onClick={() => { setRecommenderResult(null); setRecommenderQuery(''); setActiveChip(null); }}
+                        className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        🔄 {t('recNewBtn')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          const q = `Product recommendation for: ${recommenderResult.matched_category}. ${recommenderResult.ai_response ? recommenderResult.ai_response.slice(0, 120) : ''}`;
+                          setActiveTab('overview');
+                          setTimeout(() => {
+                            const chatInput = document.querySelector('.chat-input');
+                            if (chatInput) chatInput.focus();
+                          }, 300);
+                        }}
+                        className="px-4 py-2 rounded-xl text-white text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
+                        style={{background:'linear-gradient(135deg,#be185d,#7c3aed)'}}
+                      >
+                        💬 {t('recDiscussBtn')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {!recommenderResult && !isRecommending && (
+                  <div className="glass-card rounded-2xl p-8 border border-slate-700/50 flex flex-col items-center text-center gap-3">
+                    <div className="text-4xl">🧴</div>
+                    <div className="text-base font-semibold text-slate-200">{t('recEmptyTitle')}</div>
+                    <p className="text-xs text-slate-400 max-w-md leading-relaxed">
+                      {t('recEmptyDesc')}
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2 mt-2">
+                      {['🌿 Organic Cotton', '🧴 Menstrual Cup', '💧 Period Panties', '⚡ Organic Tampons'].map(tag => (
+                        <span key={tag} className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 text-[11px] border border-slate-700">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VIEW 6: QUICK-LOG & FEEDBACK */}
             {activeTab === 'symptoms' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="glass-card rounded-2xl p-6">

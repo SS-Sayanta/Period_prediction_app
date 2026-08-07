@@ -36,7 +36,8 @@ from ml_pipeline import (
 )
 from analytics import analyze_cycle_anomalies, generate_multi_cycle_projection
 from report_generator import generate_medical_pdf
-from assistant import get_ai_assistant_response
+from assistant import get_ai_assistant_response, get_product_recommendation
+from auth_router import router as auth_router
 
 # Initialize CSV storage files on startup
 init_and_clean_files()
@@ -56,6 +57,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount auth routes (/api/auth/*)
+app.include_router(auth_router)
+
+
+# ── Health / Readiness Probe ──────────────────────────────────────────────
+@app.get("/api/health")
+def api_health():
+    """Lightweight readiness probe used by the splash screen polling loop."""
+    from datetime import datetime as _dt
+    return {
+        "status": "ok",
+        "version": "3.0.0",
+        "timestamp": _dt.utcnow().isoformat() + "Z",
+    }
 
 
 # ── Pydantic Request Models ────────────────────────────────────────────────
@@ -101,6 +117,13 @@ class AssistantRequest(BaseModel):
     operating_mode: str = "Cycle Tracking"
     age: int = 25
     stress_level: int = 3
+
+
+class ProductRecommendRequest(BaseModel):
+    concern: str
+    current_phase: str = "Follicular"
+    age: int = 25
+    lang: Optional[str] = "en"
 
 
 # ── Helper for Internal Inference Execution ──────────────────────────────
@@ -450,6 +473,22 @@ def chat_assistant(req: AssistantRequest):
         stress_level=req.stress_level
     )
     return {"query": req.query, "response": answer, "answer": answer}
+
+
+# 6. Smart Product Recommender Endpoint (/api/recommend-product)
+@app.post("/api/recommend-product")
+def recommend_product(req: ProductRecommendRequest):
+    """
+    Returns a structured, grounded sanitary product recommendation.
+    Combines fast KB rule-matching with Groq/Llama-3 AI enrichment.
+    """
+    result = get_product_recommendation(
+        concern=req.concern,
+        current_phase=req.current_phase,
+        age=req.age,
+        lang=req.lang or "en",
+    )
+    return result
 
 
 # 6. PDF Export Endpoint (/api/export-pdf)
