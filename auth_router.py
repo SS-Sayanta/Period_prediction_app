@@ -33,11 +33,11 @@ JWT_SECRET   = os.getenv("JWT_SECRET", secrets.token_hex(32))
 JWT_ALG      = "HS256"
 JWT_EXPIRE_H = 720          # 30 days
 
-SMTP_HOST    = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT    = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER    = os.getenv("SMTP_USER", "")
-SMTP_PASS    = os.getenv("SMTP_PASS", "")
-SMTP_FROM    = os.getenv("SMTP_FROM", SMTP_USER or "noreply@femcare.ai")
+SMTP_SERVER     = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT       = int(os.getenv("SMTP_PORT", "587"))
+SENDER_EMAIL    = os.getenv("SMTP_EMAIL", os.getenv("SENDER_EMAIL", ""))
+SENDER_PASSWORD = os.getenv("SMTP_APP_PASSWORD", os.getenv("SMTP_PASSWORD", os.getenv("SENDER_PASSWORD", "")))
+SMTP_FROM       = os.getenv("SMTP_FROM", SENDER_EMAIL or "noreply@femcare.ai")
 
 USERS_FILE   = Path("data/users.json")
 OTP_TTL_S    = 120          # OTP expires after 2 minutes
@@ -87,47 +87,215 @@ def _decode_jwt(token: str) -> Dict[str, Any]:
 
 
 def _send_email(to: str, subject: str, html_body: str) -> bool:
-    """Send email via SMTP. Returns True on success, False if SMTP not configured."""
-    if not SMTP_USER or not SMTP_PASS:
-        print(f"[AUTH] SMTP not configured. OTP email to {to} not sent. Check console.")
+    """Send email via Gmail SMTP (STARTTLS/SSL). Returns True on success."""
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        print(
+            f"\n{'='*55}\n"
+            f"[AUTH] ⚠️  SMTP NOT CONFIGURED — email to {to} skipped.\n"
+            f"  Add to .env:\n"
+            f"    SMTP_EMAIL=your-gmail@gmail.com\n"
+            f"    SMTP_APP_PASSWORD=your-16-char-app-password\n"
+            f"{'='*55}\n"
+        )
         return False
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = SMTP_FROM
+        msg["From"]    = f"FemCare AI <{SMTP_FROM}>"
         msg["To"]      = to
-        msg.attach(MIMEText(html_body, "html"))
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as s:
-            s.ehlo()
-            s.starttls()
-            s.login(SMTP_USER, SMTP_PASS)
-            s.sendmail(SMTP_FROM, [to], msg.as_string())
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        if SMTP_PORT == 465:
+            # Direct SSL connection (Port 465)
+            with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=15) as s:
+                s.login(SENDER_EMAIL, SENDER_PASSWORD)
+                s.sendmail(SENDER_EMAIL, [to], msg.as_string())
+        else:
+            # STARTTLS upgrade (Port 587 — Gmail default)
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as s:
+                s.ehlo()
+                s.starttls()
+                s.ehlo()
+                s.login(SENDER_EMAIL, SENDER_PASSWORD)
+                s.sendmail(SENDER_EMAIL, [to], msg.as_string())
+
+        print(f"[AUTH] ✅  Email sent successfully to {to}")
         return True
+    except smtplib.SMTPAuthenticationError:
+        print(
+            f"[AUTH] ❌  Gmail authentication failed for '{SENDER_EMAIL}'.\n"
+            f"  → Make sure you are using a Gmail App Password, NOT your regular password.\n"
+            f"  → Generate one at: https://myaccount.google.com/apppasswords"
+        )
+        return False
+    except smtplib.SMTPConnectError:
+        print(f"[AUTH] ❌  Could not connect to {SMTP_SERVER}:{SMTP_PORT}. Check network or firewall.")
+        return False
     except Exception as e:
-        print(f"[AUTH] SMTP error: {e}")
+        print(f"[AUTH] ❌  SMTP error: {type(e).__name__}: {e}")
         return False
 
 
+def _is_phone_number(val: str) -> bool:
+    # Remove spacing and separators
+    if "@" in val:
+        return False
+    digits = [c for c in val if c.isdigit()]
+    return len(digits) >= 8
+
+
+def _send_sms(to: str, body: str) -> bool:
+    """Send SMS via Twilio or Fast2SMS if configured, otherwise print to console."""
+    TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+    TWILIO_AUTH_TOKEN  = os.getenv("TWILIO_AUTH_TOKEN")
+    TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
+    FAST2SMS_API_KEY = os.getenv("FAST2SMS_API_KEY")
+
+    # Clean the phone number
+    cleaned_to = "".join(c for c in to if c.isdigit() or c == "+")
+    if not cleaned_to.startswith("+") and len(cleaned_to) == 10:
+        cleaned_to = f"+91{cleaned_to}"
+
+    # Try Twilio first
+    if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER:
+        try:
+            from twilio.rest import Client
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            message = client.messages.create(
+                body=body,
+                from_=TWILIO_PHONE_NUMBER,
+                to=cleaned_to
+            )
+            print(f"[AUTH] Twilio SMS sent to {cleaned_to}. SID: {message.sid}")
+            return True
+        except ImportError:
+            print("[AUTH] twilio package is not installed. Skipping Twilio.")
+        except Exception as e:
+            print(f"[AUTH] Twilio SMS error: {e}")
+
+    # Try Fast2SMS next
+    if FAST2SMS_API_KEY:
+        try:
+            import requests
+            url = "https://www.fast2sms.com/dev/bulkV2"
+            raw_num = "".join(c for c in cleaned_to if c.isdigit())
+            if len(raw_num) > 10 and raw_num.startswith("91"):
+                numbers = raw_num[2:]
+            else:
+                numbers = raw_num
+                
+            payload = {
+                "message": body,
+                "language": "english",
+                "route": "q",
+                "numbers": numbers
+            }
+            headers = {
+                'authorization': FAST2SMS_API_KEY,
+                'Content-Type': "application/x-www-form-urlencoded",
+                'Cache-Control': "no-cache"
+            }
+            response = requests.post(url, data=payload, headers=headers, timeout=10)
+            res_json = response.json()
+            if res_json.get("return"):
+                print(f"[AUTH] Fast2SMS sent successfully to {numbers}")
+                return True
+            else:
+                print(f"[AUTH] Fast2SMS error: {res_json.get('message')}")
+        except ImportError:
+            print("[AUTH] requests package is not installed. Skipping Fast2SMS.")
+        except Exception as e:
+            print(f"[AUTH] Fast2SMS API error: {e}")
+
+    # Fallback print to console
+    print(f"\n==========================================")
+    print(f"[SMS MOCK] Sending SMS to: {cleaned_to}")
+    print(f"[SMS MOCK] Content: {body}")
+    print(f"==========================================\n")
+    return False
+
+
 def _otp_email_html(otp: str, purpose: str = "registration") -> str:
-    action = "complete your registration" if purpose == "registration" else "reset your password"
-    return f"""
+    action_label  = "Complete Registration" if purpose == "registration" else "Reset Your Password"
+    action_desc   = "complete your registration" if purpose == "registration" else "reset your password"
+    otp_digits    = "".join(
+        f'<span style="display:inline-block;width:44px;height:52px;line-height:52px;'
+        f'text-align:center;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.4);'
+        f'border-radius:10px;font-size:26px;font-weight:800;color:#f9a8d4;margin:0 4px;">'
+        f'{d}</span>'
+        for d in otp
+    )
+    return f"""\
 <!DOCTYPE html>
-<html>
-<body style="background:#0b0e17;font-family:Inter,sans-serif;margin:0;padding:40px 20px;">
-  <div style="max-width:480px;margin:0 auto;background:linear-gradient(135deg,#1a0a2e,#0d0d1a);
-              border:1px solid rgba(236,72,153,0.25);border-radius:20px;padding:40px 36px;text-align:center;">
-    <div style="font-size:42px;margin-bottom:16px;">❤️</div>
-    <h1 style="color:#f9a8d4;font-size:22px;font-weight:800;margin:0 0 8px;">FemCare AI</h1>
-    <p style="color:#94a3b8;font-size:14px;margin:0 0 32px;">Your OTP to {action}:</p>
-    <div style="background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3);
-                border-radius:14px;padding:24px;margin-bottom:24px;">
-      <span style="font-size:40px;font-weight:800;letter-spacing:10px;
-                   background:linear-gradient(90deg,#ec4899,#a855f7);
-                   -webkit-background-clip:text;-webkit-text-fill-color:transparent;">{otp}</span>
-    </div>
-    <p style="color:#64748b;font-size:12px;">This code expires in 2 minutes. Do not share it with anyone.</p>
-    <p style="color:#475569;font-size:11px;margin-top:24px;">— FemCare AI Team 💜</p>
-  </div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>FemCare AI — Verification Code</title>
+</head>
+<body style="margin:0;padding:0;background:#080b14;font-family:'Segoe UI',Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#080b14;padding:48px 16px;">
+    <tr><td align="center">
+      <table width="520" cellpadding="0" cellspacing="0"
+             style="background:linear-gradient(160deg,#1a0a2e 0%,#0d1020 100%);
+                    border:1px solid rgba(236,72,153,0.2);border-radius:20px;
+                    overflow:hidden;box-shadow:0 24px 80px rgba(168,85,247,0.15);">
+
+        <!-- Header band -->
+        <tr>
+          <td style="background:linear-gradient(90deg,#7c3aed,#db2777);padding:28px 40px;text-align:center;">
+            <div style="font-size:36px;line-height:1;">❤️</div>
+            <h1 style="color:#fff;font-size:24px;font-weight:800;margin:10px 0 4px;
+                       letter-spacing:-0.5px;">FemCare AI</h1>
+            <p style="color:rgba(255,255,255,0.75);font-size:13px;margin:0;">Your Personal Health Companion</p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:40px 40px 32px;text-align:center;">
+            <h2 style="color:#f9a8d4;font-size:18px;font-weight:700;margin:0 0 8px;">
+              {action_label}
+            </h2>
+            <p style="color:#94a3b8;font-size:14px;margin:0 0 32px;line-height:1.6;">
+              Use the code below to {action_desc}.<br>
+              This code is valid for <strong style="color:#c084fc;">2 minutes</strong>.
+            </p>
+
+            <!-- OTP digit boxes -->
+            <div style="margin:0 auto 28px;display:inline-block;">
+              {otp_digits}
+            </div>
+
+            <!-- Warning box -->
+            <div style="background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);
+                        border-radius:10px;padding:14px 20px;margin-bottom:24px;">
+              <p style="color:#fbbf24;font-size:12px;margin:0;line-height:1.6;">
+                🔒 Never share this code with anyone.<br>
+                FemCare AI will never ask for your OTP via phone or chat.
+              </p>
+            </div>
+
+            <p style="color:#475569;font-size:12px;margin:0;">
+              If you didn't request this, you can safely ignore this email.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.05);
+                     padding:20px 40px;text-align:center;">
+            <p style="color:#334155;font-size:11px;margin:0;">
+              © 2026 FemCare AI &nbsp;·&nbsp; Reproductive Health Platform
+              <br>This is an automated message — please do not reply.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
 </body>
 </html>"""
 
@@ -163,11 +331,14 @@ def send_otp(req: SendOTPRequest):
     """Generate & send a 6-digit OTP. Works for both registration and password reset."""
     users = _load_users()
 
+    is_phone = _is_phone_number(req.email)
+    contact_type = "phone number" if is_phone else "email address"
+
     if req.purpose == "registration" and req.email in users:
-        raise HTTPException(status_code=409, detail="An account with this email already exists. Please log in.")
+        raise HTTPException(status_code=409, detail=f"An account with this {contact_type} already exists. Please log in.")
 
     if req.purpose == "reset" and req.email not in users:
-        raise HTTPException(status_code=404, detail="No account found with this email address.")
+        raise HTTPException(status_code=404, detail=f"No account found with this {contact_type}.")
 
     otp = _gen_otp()
     _otp_store[req.email] = {
@@ -177,16 +348,29 @@ def send_otp(req: SendOTPRequest):
         "name":       req.name or "",
     }
 
-    subject = "🔐 FemCare AI — Your Verification Code"
-    sent    = _send_email(req.email, subject, _otp_email_html(otp, req.purpose))
+    sent = False
+    if is_phone:
+        # Format phone number for UI display (+91XXXXXXXXXX)
+        cleaned_num = "".join(c for c in req.email if c.isdigit() or c == "+")
+        if not cleaned_num.startswith("+") and len(cleaned_num) == 10:
+            cleaned_num = f"+91{cleaned_num}"
+        sms_body = f"FemCare AI verification code: {otp}. Valid for 2 minutes."
+        sent = _send_sms(req.email, sms_body)
+        message = f"OTP sent to {cleaned_num}."
+    else:
+        subject = "🔐 FemCare AI — Your Verification Code"
+        sent = _send_email(req.email, subject, _otp_email_html(otp, req.purpose))
+        message = f"OTP sent to {req.email}. Check your inbox (or server console in dev mode)."
 
-    # Always print to server console (fallback for dev / no SMTP)
-    print(f"[AUTH] OTP for {req.email} ({req.purpose}): {otp}")
+    # Always print the generated OTP directly in the VS Code terminal/console in bold green
+    print(f"\n====================\n\033[1;32m[OTP DEBUG] Sent to {req.email}: {otp}\033[0m\n====================\n")
 
     return {
         "success": True,
-        "email_sent": sent,
-        "message": f"OTP sent to {req.email}. Check your inbox (or server console in dev mode).",
+        "email_sent": sent if not is_phone else False,
+        "sms_sent": sent if is_phone else False,
+        "sent": sent,
+        "message": message,
         # DEV-ONLY: remove in production
         "dev_otp": otp if not sent else None,
     }
@@ -197,7 +381,7 @@ def verify_otp(req: VerifyOTPRequest):
     """Verify OTP → create account (registration) or confirm identity (reset step 1)."""
     record = _otp_store.get(req.email)
     if not record:
-        raise HTTPException(status_code=400, detail="No OTP was requested for this email.")
+        raise HTTPException(status_code=400, detail="No OTP was requested for this contact.")
     if time.time() > record["expires_at"]:
         _otp_store.pop(req.email, None)
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
@@ -230,7 +414,8 @@ def login(req: LoginRequest):
     users = _load_users()
     user  = users.get(req.email)
     if not user or not pwd_ctx.verify(req.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
+        contact_type = "phone number" if _is_phone_number(req.email) else "email"
+        raise HTTPException(status_code=401, detail=f"Invalid {contact_type} or password.")
     token = _make_jwt(req.email, user["name"])
     return {"success": True, "token": token, "name": user["name"], "email": req.email}
 

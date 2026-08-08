@@ -1,0 +1,20 @@
+{
+  "+919876543210": {
+    "email": "+919876543210",
+    "name": "Test User",
+    "password": "$2b$12$j2hYGNSsZMLg6aPk2IqlOOPT6WRSP3RXCX8JxfhtXFSL2hcwkxdEu",
+    "created_at": "2026-08-07T19:42:42.869180"
+  },
+  "sayantaghosh200@gmail.com": {
+    "email": "sayantaghosh200@gmail.com",
+    "name": "Sayanta",
+    "password": "$2b$12$3.OwJ4ckqpYQJ/Ns.c3Z3.Yd2GkkB8yH37DKRhIqTafqUuHEWgm1m",
+    "created_at": "2026-08-07T20:17:51.846361"
+  },
+  "sayantaghosh002@gmail.com": {
+    "email": "sayantaghosh002@gmail.com",
+    "name": "Sayanta",
+    "password": "$2b$12$Y/WVtgvmSZiFAeXdQm8bh.zoHc.ZF1F.cazpDTrH.oQDVM1.BFE/u",
+    "created_at": "2026-08-08T09:40:02.898136"
+  }
+}

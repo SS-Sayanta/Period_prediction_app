@@ -563,14 +563,7 @@
       to   { opacity: 1; transform: none; }
     }
 
-    .auth-logo-ring {
-      width: 64px; height: 64px; border-radius: 50%;
-      background: linear-gradient(135deg, #ec4899, #a855f7);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 26px; margin: 0 auto 18px;
-      box-shadow: 0 0 24px rgba(236,72,153,0.4);
-      animation: splashHeartbeat 2s ease-in-out infinite;
-    }
+    /* auth-logo-ring now defined below with 3D styles */
     .auth-title {
       font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800;
       text-align: center; margin-bottom: 4px;
@@ -696,6 +689,97 @@
       opacity: 0;
     }
     #auth-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── 3D Float Mascot ─────────────────────────────────────── */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50%      { transform: translateY(-10px); }
+    }
+    @keyframes glowPulse {
+      0%, 100% { filter: drop-shadow(0 0 18px rgba(236,72,153,0.7)) drop-shadow(0 0 40px rgba(168,85,247,0.4)); }
+      50%       { filter: drop-shadow(0 0 30px rgba(236,72,153,0.95)) drop-shadow(0 0 60px rgba(168,85,247,0.6)); }
+    }
+    @keyframes shadowPulse {
+      0%, 100% { transform: scaleX(1); opacity: 0.35; }
+      50%       { transform: scaleX(0.75); opacity: 0.18; }
+    }
+    .auth-scene {
+      display: flex; align-items: center; justify-content: center;
+      gap: 32px; width: 100%; max-width: 860px;
+    }
+    .mascot-wrap {
+      display: none;
+      flex-direction: column; align-items: center;
+      flex-shrink: 0;
+      background: rgba(20, 10, 35, 0.6);
+      border-radius: 28px;
+      padding: 28px 24px 20px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 60px rgba(168, 85, 247, 0.2), 0 0 120px rgba(236, 72, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+    .mascot-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      padding: 1.5px;
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.2) 50%, rgba(255, 255, 255, 0.05));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+    @media (min-width: 820px) {
+      .mascot-wrap { display: flex; }
+    }
+    .mascot-figure {
+      animation: float 4s ease-in-out infinite;
+      transform-origin: center bottom;
+      filter: drop-shadow(0 15px 30px rgba(236, 72, 153, 0.4));
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .mascot-img {
+      width: 260px;
+      height: 260px;
+      object-fit: contain;
+    }
+    .mascot-shadow {
+      width: 130px; height: 16px;
+      background: radial-gradient(ellipse, rgba(168,85,247,0.55) 0%, transparent 70%);
+      border-radius: 50%;
+      margin-top: 8px;
+      animation: shadowPulse 4s ease-in-out infinite;
+    }
+    .mascot-badge {
+      margin-top: 18px;
+      background: linear-gradient(135deg, rgba(236,72,153,0.12), rgba(168,85,247,0.12));
+      border: 1px solid rgba(236,72,153,0.4);
+      border-radius: 12px;
+      padding: 9px 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px; font-weight: 700;
+      color: #f9a8d4;
+      backdrop-filter: blur(8px);
+      text-align: center;
+      white-space: nowrap;
+      letter-spacing: 0.3px;
+    }
+    .mascot-badge span { color: #c4b5fd; }
+
+    /* ── 3D Logo Icon ────────────────────────────────────────── */
+    .auth-logo-ring {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(168,85,247,0.15));
+      border: 2px solid rgba(236,72,153,0.4);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px;
+      box-shadow: 0 0 32px rgba(236,72,153,0.45), 0 0 64px rgba(168,85,247,0.2);
+      animation: glowPulse 2.5s ease-in-out infinite;
+      overflow: hidden;
+    }
   </style>
 </head>
 <body class="min-h-screen antialiased selection:bg-pink-500 selection:text-white">
@@ -705,7 +789,23 @@
   <!-- ╚══════════════════════════════════╝ -->
   <div id="femcare-splash" role="status" aria-live="polite">
     <div class="splash-ring">
-      <span class="splash-heart">❤️</span>
+      <span class="splash-heart">
+        <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="hg1" cx="50%" cy="30%" r="60%">
+              <stop offset="0%" stop-color="#f9a8d4"/>
+              <stop offset="100%" stop-color="#ec4899"/>
+            </radialGradient>
+            <radialGradient id="hg2" cx="50%" cy="30%" r="60%">
+              <stop offset="0%" stop-color="#e879f9"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </radialGradient>
+          </defs>
+          <path d="M32 56s-24-14.4-24-28a14 14 0 0 1 24-9.8A14 14 0 0 1 56 28c0 13.6-24 28-24 28z" fill="url(#hg1)"/>
+          <path d="M32 48s-16-9.6-16-20a10 10 0 0 1 16-8 10 10 0 0 1 16 8c0 10.4-16 20-16 20z" fill="url(#hg2)" opacity="0.6"/>
+          <circle cx="32" cy="20" r="6" fill="white" opacity="0.25"/>
+        </svg>
+      </span>
     </div>
     <div class="splash-brand">FemCare AI</div>
     <div class="splash-tagline" id="splashTagline">FemCare AI is getting ready for you...</div>
@@ -804,10 +904,41 @@
   <div id="auth-toast"></div>
 
   <div id="femcare-auth">
-    <div class="auth-card" id="authCard">
+    <div class="auth-scene">
+
+      <!-- ── 3D Floating Female Mascot ── -->
+      <div class="mascot-wrap" aria-hidden="true">
+        <div class="mascot-figure">
+          <img src="https://img.icons8.com/3d-fluency/375/female-doctor.png" alt="FemCare AI Doctor Companion" class="mascot-img">
+        </div>
+        <div class="mascot-shadow"></div>
+        <div class="mascot-badge">✨ <span>FemCare AI</span> Health Companion</div>
+      </div>
+
+      <!-- ── Auth Card ── -->
+      <div class="auth-card" id="authCard">
 
       <!-- Logo -->
-      <div class="auth-logo-ring">❤️</div>
+      <div class="auth-logo-ring">
+        <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="lg1" cx="40%" cy="25%" r="65%">
+              <stop offset="0%" stop-color="#fde8d8"/>
+              <stop offset="100%" stop-color="#ec4899"/>
+            </radialGradient>
+            <radialGradient id="lg2" cx="50%" cy="30%" r="60%">
+              <stop offset="0%" stop-color="#e879f9"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </radialGradient>
+          </defs>
+          <path d="M32 54s-22-13.2-22-26a13 13 0 0 1 22-9.36A13 13 0 0 1 54 28c0 12.8-22 26-22 26z" fill="url(#lg1)"/>
+          <path d="M32 47s-14-8.8-14-18a9 9 0 0 1 14-7.5A9 9 0 0 1 46 29c0 9.2-14 18-14 18z" fill="url(#lg2)" opacity="0.65"/>
+          <ellipse cx="26" cy="23" rx="5" ry="3" fill="white" opacity="0.3" transform="rotate(-30 26 23)"/>
+          <!-- AI cross -->
+          <rect x="29" y="36" width="6" height="10" rx="2" fill="white" opacity="0.85"/>
+          <rect x="26" y="39" width="12" height="4" rx="2" fill="white" opacity="0.85"/>
+        </svg>
+      </div>
       <div class="auth-title">FemCare AI</div>
       <div class="auth-subtitle" id="authSubtitle">Your personal health companion</div>
 
@@ -821,9 +952,15 @@
           <button class="auth-tab" onclick="authShowTab('register')">Register</button>
         </div>
         <div class="auth-field">
-          <label class="auth-label">Email</label>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label class="auth-label" id="loginLabel" style="margin-bottom:0;">Email Address</label>
+            <div style="display:flex; gap:6px;">
+              <button class="auth-link" id="loginToggleEmail" onclick="setContactType('login', 'email')" style="font-size:10px; text-decoration:none; color:#f9a8d4; font-weight:700; background:rgba(236,72,153,0.12); padding:2px 8px; border-radius:6px;">Email</button>
+              <button class="auth-link" id="loginTogglePhone" onclick="setContactType('login', 'phone')" style="font-size:10px; text-decoration:none; color:#94a3b8; font-weight:600; background:transparent; padding:2px 8px; border-radius:6px;">Phone</button>
+            </div>
+          </div>
           <div class="auth-input-wrap">
-            <input id="loginEmail" type="email" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
+            <input id="loginEmail" type="text" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
           </div>
         </div>
         <div class="auth-field">
@@ -857,9 +994,15 @@
           </div>
         </div>
         <div class="auth-field">
-          <label class="auth-label">Email</label>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label class="auth-label" id="regLabel" style="margin-bottom:0;">Email Address</label>
+            <div style="display:flex; gap:6px;">
+              <button class="auth-link" id="regToggleEmail" onclick="setContactType('register', 'email')" style="font-size:10px; text-decoration:none; color:#f9a8d4; font-weight:700; background:rgba(236,72,153,0.12); padding:2px 8px; border-radius:6px;">Email</button>
+              <button class="auth-link" id="regTogglePhone" onclick="setContactType('register', 'phone')" style="font-size:10px; text-decoration:none; color:#94a3b8; font-weight:600; background:transparent; padding:2px 8px; border-radius:6px;">Phone</button>
+            </div>
+          </div>
           <div class="auth-input-wrap">
-            <input id="regEmail" type="email" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
+            <input id="regEmail" type="text" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
           </div>
         </div>
         <div class="auth-field">
@@ -869,13 +1012,13 @@
             <button class="auth-eye" onclick="authToggleEye('regPass',this)" title="Show/Hide">👁</button>
           </div>
         </div>
-        <button class="auth-btn" id="regBtn" onclick="authSendRegOTP()">Continue & Verify Email →</button>
+        <button class="auth-btn" id="regBtn" onclick="authSendRegOTP()">Continue & Verify →</button>
         <button class="auth-btn-ghost" onclick="authShowTab('login')">Already have an account? Sign in</button>
       </div>
 
       <!-- ══ VIEW: OTP ══ -->
       <div id="viewOTP" style="display:none">
-        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;">Enter the 6-digit code sent to</p>
+        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;" id="otpTargetLabel">Enter the 6-digit code sent to</p>
         <p style="text-align:center;font-size:13px;color:#f9a8d4;font-weight:700;margin:0 0 2px;" id="otpEmailDisplay"></p>
         <div class="otp-grid" id="otpGrid">
           <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
@@ -889,16 +1032,28 @@
         <div class="auth-timer">Resend in <span id="otpTimer">120</span>s &nbsp;|&nbsp;
           <button class="auth-link" id="resendBtn" onclick="authResendOTP()" disabled style="opacity:0.4">Resend OTP</button>
         </div>
+        
+        <!-- Fallback Banner -->
+        <div id="otpFallbackBanner" style="margin-top:18px; padding:12px 16px; border-radius:10px; font-size:11.5px; text-align:center; background:rgba(168,85,247,0.05); border:1px dashed rgba(236,72,153,0.3); color:#94a3b8; line-height:1.6;">
+          📬 Check your <strong style="color:#f9a8d4;">Email Inbox &amp; Spam folder</strong>, or copy the code directly from the <strong style="color:#c084fc;">VS Code Terminal</strong> for instant testing.
+        </div>
+        
         <button class="auth-btn-ghost" onclick="authShowView('register')" style="margin-top:10px">← Back</button>
       </div>
 
       <!-- ══ VIEW: FORGOT ══ -->
       <div id="viewForgot" style="display:none">
-        <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;text-align:center;">Enter your email to receive a reset code.</p>
+        <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;text-align:center;">Enter your email or phone number to receive a reset code.</p>
         <div class="auth-field">
-          <label class="auth-label">Email</label>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label class="auth-label" id="fpLabel" style="margin-bottom:0;">Email Address</label>
+            <div style="display:flex; gap:6px;">
+              <button class="auth-link" id="fpToggleEmail" onclick="setContactType('forgot', 'email')" style="font-size:10px; text-decoration:none; color:#f9a8d4; font-weight:700; background:rgba(236,72,153,0.12); padding:2px 8px; border-radius:6px;">Email</button>
+              <button class="auth-link" id="fpTogglePhone" onclick="setContactType('forgot', 'phone')" style="font-size:10px; text-decoration:none; color:#94a3b8; font-weight:600; background:transparent; padding:2px 8px; border-radius:6px;">Phone</button>
+            </div>
+          </div>
           <div class="auth-input-wrap">
-            <input id="fpEmail" type="email" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
+            <input id="fpEmail" type="text" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
           </div>
         </div>
         <button class="auth-btn" id="fpSendBtn" onclick="authSendResetOTP()">Send Reset Code →</button>
@@ -907,7 +1062,7 @@
 
       <!-- ══ VIEW: RESET OTP ══ -->
       <div id="viewResetOTP" style="display:none">
-        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;">Reset code sent to</p>
+        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;" id="fpTargetLabel">Reset code sent to</p>
         <p style="text-align:center;font-size:13px;color:#f9a8d4;font-weight:700;margin:0 0 2px;" id="fpEmailDisplay"></p>
         <div class="otp-grid" id="resetOTPGrid">
           <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
@@ -928,9 +1083,15 @@
         <div class="auth-timer">Resend in <span id="fpTimer">120</span>s &nbsp;|&nbsp;
           <button class="auth-link" id="fpResendBtn" onclick="authSendResetOTP(true)" disabled style="opacity:0.4">Resend</button>
         </div>
+        
+        <!-- Fallback Banner -->
+        <div id="otpResetFallbackBanner" style="margin-top:18px; padding:12px 16px; border-radius:10px; font-size:11.5px; text-align:center; background:rgba(168,85,247,0.05); border:1px dashed rgba(236,72,153,0.3); color:#94a3b8; line-height:1.6;">
+          📬 Check your <strong style="color:#f9a8d4;">Email Inbox &amp; Spam folder</strong>, or copy the code directly from the <strong style="color:#c084fc;">VS Code Terminal</strong> for instant testing.
+        </div>
       </div>
 
-    </div>
+      </div>
+    </div><!-- end auth-scene -->
   </div>
 
   <script>
@@ -973,6 +1134,80 @@
       setTimeout(function(){ t.classList.remove('show'); }, 3500);
     }
 
+    /* ── Dual Auth contact mode ── */
+    var loginContactType = 'email';
+    var registerContactType = 'email';
+    var forgotContactType = 'email';
+
+    function validateEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+    function validatePhone(phone) {
+      return /^\+?[0-9]{7,15}$/.test(phone.replace(/[\s\-()]/g, ''));
+    }
+
+    function setContactType(view, type) {
+      if (view === 'login') {
+        loginContactType = type;
+        var emailBtn = $('loginToggleEmail');
+        var phoneBtn = $('loginTogglePhone');
+        var label = $('loginLabel');
+        var input = $('loginEmail');
+        if (type === 'email') {
+          emailBtn.style.color = '#f9a8d4'; emailBtn.style.background = 'rgba(236,72,153,0.12)'; emailBtn.style.fontWeight = '700';
+          phoneBtn.style.color = '#94a3b8'; phoneBtn.style.background = 'transparent'; phoneBtn.style.fontWeight = '600';
+          label.textContent = 'Email Address';
+          input.placeholder = 'you@example.com';
+          input.type = 'text';
+        } else {
+          phoneBtn.style.color = '#f9a8d4'; phoneBtn.style.background = 'rgba(236,72,153,0.12)'; phoneBtn.style.fontWeight = '700';
+          emailBtn.style.color = '#94a3b8'; emailBtn.style.background = 'transparent'; emailBtn.style.fontWeight = '600';
+          label.textContent = 'Phone Number';
+          input.placeholder = '+919876543210';
+          input.type = 'tel';
+        }
+      } else if (view === 'register') {
+        registerContactType = type;
+        var emailBtn = $('regToggleEmail');
+        var phoneBtn = $('regTogglePhone');
+        var label = $('regLabel');
+        var input = $('regEmail');
+        if (type === 'email') {
+          emailBtn.style.color = '#f9a8d4'; emailBtn.style.background = 'rgba(236,72,153,0.12)'; emailBtn.style.fontWeight = '700';
+          phoneBtn.style.color = '#94a3b8'; phoneBtn.style.background = 'transparent'; phoneBtn.style.fontWeight = '600';
+          label.textContent = 'Email Address';
+          input.placeholder = 'you@example.com';
+          input.type = 'text';
+        } else {
+          phoneBtn.style.color = '#f9a8d4'; phoneBtn.style.background = 'rgba(236,72,153,0.12)'; phoneBtn.style.fontWeight = '700';
+          emailBtn.style.color = '#94a3b8'; emailBtn.style.background = 'transparent'; emailBtn.style.fontWeight = '600';
+          label.textContent = 'Phone Number';
+          input.placeholder = '+919876543210';
+          input.type = 'tel';
+        }
+      } else if (view === 'forgot') {
+        forgotContactType = type;
+        var emailBtn = $('fpToggleEmail');
+        var phoneBtn = $('fpTogglePhone');
+        var label = $('fpLabel');
+        var input = $('fpEmail');
+        if (type === 'email') {
+          emailBtn.style.color = '#f9a8d4'; emailBtn.style.background = 'rgba(236,72,153,0.12)'; emailBtn.style.fontWeight = '700';
+          phoneBtn.style.color = '#94a3b8'; phoneBtn.style.background = 'transparent'; phoneBtn.style.fontWeight = '600';
+          label.textContent = 'Email Address';
+          input.placeholder = 'you@example.com';
+          input.type = 'text';
+        } else {
+          phoneBtn.style.color = '#f9a8d4'; phoneBtn.style.background = 'rgba(236,72,153,0.12)'; phoneBtn.style.fontWeight = '700';
+          emailBtn.style.color = '#94a3b8'; emailBtn.style.background = 'transparent'; emailBtn.style.fontWeight = '600';
+          label.textContent = 'Phone Number';
+          input.placeholder = '+919876543210';
+          input.type = 'tel';
+        }
+      }
+    }
+    window.setContactType = setContactType;
+
     /* ── View router ── */
     var VIEWS = ['viewLogin','viewRegister','viewOTP','viewForgot','viewResetOTP'];
     function authShowView(name) {
@@ -983,7 +1218,7 @@
       var subtitles = {
         login:    'Welcome back 💜',
         register: 'Create your account',
-        OTP:      'Verify your email',
+        OTP:      'Verify contact info',
         forgot:   'Forgot your password?',
         resetOTP: 'Reset your password'
       };
@@ -1083,6 +1318,16 @@
       var email = $('loginEmail').value.trim();
       var pass  = $('loginPass').value;
       if (!email || !pass) { showMsg('Please fill in all fields.', 'error'); return; }
+
+      if (loginContactType === 'email' && !validateEmail(email)) {
+        showMsg('Please enter a valid email address.', 'error');
+        return;
+      }
+      if (loginContactType === 'phone' && !validatePhone(email)) {
+        showMsg('Please enter a valid phone number.', 'error');
+        return;
+      }
+
       setLoading('loginBtn', true, 'Signing in →');
       fetch('/api/auth/login', {
         method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1108,6 +1353,16 @@
       var email = $('regEmail').value.trim();
       var pass  = $('regPass').value;
       if (!name || !email || !pass) { showMsg('Please fill in all fields.', 'error'); return; }
+
+      if (registerContactType === 'email' && !validateEmail(email)) {
+        showMsg('Please enter a valid email address.', 'error');
+        return;
+      }
+      if (registerContactType === 'phone' && !validatePhone(email)) {
+        showMsg('Please enter a valid phone number.', 'error');
+        return;
+      }
+
       if (pass.length < 6) { showMsg('Password must be at least 6 characters.', 'error'); return; }
       _pendingEmail = email; _pendingName = name; _otpPurpose = 'registration';
       setLoading('regBtn', true, 'Sending OTP...');
@@ -1118,8 +1373,20 @@
       .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
       .then(function(res) {
         if (res.ok) {
+          showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
           _devOTP = res.d.dev_otp || '';
           if (_devOTP) showMsg('DEV MODE — OTP: ' + _devOTP + ' (check server console)', 'info');
+          
+          var isEmail = email.includes('@');
+          $('otpTargetLabel').textContent = isEmail ? 'Enter the 6-digit code sent to email' : 'Enter the 6-digit code sent to phone';
+          
+          var banner = $('otpFallbackBanner');
+          if (isEmail) {
+            banner.innerHTML = "Didn't receive email? Check <strong>Spam folder</strong> or try <strong>Phone Number</strong>";
+          } else {
+            banner.innerHTML = "Didn't receive SMS? Check your signal or try <strong>Email Address</strong>";
+          }
+          
           $('otpEmailDisplay').textContent = email;
           clearOTP('otpGrid');
           authShowView('OTP');
@@ -1130,7 +1397,7 @@
         }
       })
       .catch(function(){ showMsg('Network error.', 'error'); })
-      .finally(function(){ setLoading('regBtn', false, 'Continue & Verify Email →'); });
+      .finally(function(){ setLoading('regBtn', false, 'Continue & Verify →'); });
     };
 
     /* RESEND OTP */
@@ -1142,6 +1409,7 @@
       })
       .then(function(r){ return r.json(); })
       .then(function(d){
+        showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
         _devOTP = d.dev_otp || '';
         if (_devOTP) showMsg('DEV — New OTP: ' + _devOTP, 'info');
         else showMsg('New OTP sent!', 'ok');
@@ -1178,7 +1446,19 @@
     window.authSendResetOTP = function(isResend) {
       clearMsg();
       var email = isResend ? _pendingEmail : $('fpEmail').value.trim();
-      if (!email) { showMsg('Please enter your email.', 'error'); return; }
+      if (!email) { showMsg('Please enter your email or phone number.', 'error'); return; }
+
+      if (!isResend) {
+        if (forgotContactType === 'email' && !validateEmail(email)) {
+          showMsg('Please enter a valid email address.', 'error');
+          return;
+        }
+        if (forgotContactType === 'phone' && !validatePhone(email)) {
+          showMsg('Please enter a valid phone number.', 'error');
+          return;
+        }
+      }
+
       _pendingEmail = email; _otpPurpose = 'reset';
       setLoading('fpSendBtn', true, 'Sending...');
       fetch('/api/auth/send-otp', {
@@ -1188,7 +1468,19 @@
       .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
       .then(function(res) {
         if (res.ok) {
+          showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
           _devOTP = res.d.dev_otp || '';
+          
+          var isEmail = email.includes('@');
+          $('fpTargetLabel').textContent = isEmail ? 'Reset code sent to email' : 'Reset code sent to phone';
+          
+          var banner = $('otpResetFallbackBanner');
+          if (isEmail) {
+            banner.innerHTML = "Didn't receive email? Check <strong>Spam folder</strong> or try <strong>Phone Number</strong>";
+          } else {
+            banner.innerHTML = "Didn't receive SMS? Check your signal or try <strong>Email Address</strong>";
+          }
+
           $('fpEmailDisplay').textContent = email;
           clearOTP('resetOTPGrid');
           if (_devOTP) showMsg('DEV — Reset OTP: ' + _devOTP, 'info');
