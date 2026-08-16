@@ -1,12 +1,13 @@
 """
-auth_router.py — FemCare AI Authentication Router
+auth_router.py — FemCare AI Email Authentication Router with MySQL Integration
 Endpoints:
-  POST /api/auth/send-otp          → send registration OTP to email
-  POST /api/auth/verify-otp        → verify OTP + create account + return JWT
-  POST /api/auth/login             → password login + return JWT
-  POST /api/auth/forgot-password   → send password-reset OTP
-  POST /api/auth/reset-password    → verify reset OTP + update password
-  GET  /api/auth/me                → return current user info from JWT
+  POST /api/auth/register         → direct registration with email & password
+  POST /api/auth/send-otp          → send 6-digit OTP to user email
+  POST /api/auth/verify-otp        → verify OTP + create account in MySQL + return JWT
+  POST /api/auth/login             → email & password login + return JWT
+  POST /api/auth/forgot-password   → send password-reset OTP to email
+  POST /api/auth/reset-password    → verify reset OTP + update password in MySQL
+  GET  /api/auth/me                → return current user info from JWT / MySQL
 """
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Optional, Dict, Any
 
+import pymysql
+import pymysql.cursors
 from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
@@ -42,7 +45,14 @@ SMTP_FROM       = os.getenv("SMTP_FROM", SENDER_EMAIL or "noreply@femcare.ai")
 USERS_FILE   = Path("data/users.json")
 OTP_TTL_S    = 120          # OTP expires after 2 minutes
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── MySQL Credentials ────────────────────────────────────────────────────────
+DB_HOST     = os.getenv("DB_HOST", "localhost")
+DB_PORT     = int(os.getenv("DB_PORT", "3306"))
+DB_USER     = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
+DB_NAME     = os.getenv("DB_NAME", "femcare_db")
+
+# ── Password Hashing & Router Initialization ─────────────────────────────────
 pwd_ctx  = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router   = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -50,7 +60,63 @@ router   = APIRouter(prefix="/api/auth", tags=["auth"])
 _otp_store: Dict[str, Dict[str, Any]] = {}
 
 
-def _load_users() -> Dict[str, Any]:
+# ── Database Helpers ─────────────────────────────────────────────────────────
+def _get_db_connection():
+    return pymysql.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME,
+        cursorclass=pymysql.cursors.DictCursor,
+        autocommit=True
+    )
+
+
+def init_db() -> None:
+    """Ensure MySQL database 'femcare_db', 'users' table, and migrate legacy json users."""
+    try:
+        conn = pymysql.connect(host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASSWORD)
+        with conn.cursor() as cursor:
+            cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+        conn.close()
+
+        conn = _get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    email VARCHAR(255) NOT NULL UNIQUE,
+                    name VARCHAR(255) DEFAULT '',
+                    password VARCHAR(255) NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
+
+        if USERS_FILE.exists():
+            try:
+                users_data = json.loads(USERS_FILE.read_text(encoding="utf-8"))
+                with conn.cursor() as cursor:
+                    for email_key, u in users_data.items():
+                        cursor.execute("SELECT id FROM users WHERE email = %s", (email_key.lower().strip(),))
+                        if not cursor.fetchone():
+                            cursor.execute(
+                                "INSERT INTO users (email, name, password) VALUES (%s, %s, %s)",
+                                (u.get("email", email_key).lower().strip(), u.get("name", ""), u.get("password", ""))
+                            )
+            except Exception as me:
+                print(f"[AUTH DB] Warning during legacy user migration: {me}")
+
+        conn.close()
+        print("[AUTH DB] [OK] MySQL database 'femcare_db' and 'users' table initialized successfully.")
+    except Exception as e:
+        print(f"[AUTH DB] [WARNING] MySQL initialization warning: {e}")
+
+
+init_db()
+
+
+def _load_users_json() -> Dict[str, Any]:
     USERS_FILE.parent.mkdir(parents=True, exist_ok=True)
     if USERS_FILE.exists():
         try:
@@ -60,9 +126,74 @@ def _load_users() -> Dict[str, Any]:
     return {}
 
 
-def _save_users(users: Dict[str, Any]) -> None:
+def _save_users_json(users: Dict[str, Any]) -> None:
     USERS_FILE.parent.mkdir(parents=True, exist_ok=True)
     USERS_FILE.write_text(json.dumps(users, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def db_get_user(email: str) -> Optional[Dict[str, Any]]:
+    """Retrieve user by email from MySQL users table."""
+    cleaned_email = email.lower().strip()
+    try:
+        conn = _get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, email, name, password, created_at FROM users WHERE email = %s", (cleaned_email,))
+            user = cursor.fetchone()
+        conn.close()
+        if user:
+            return user
+    except Exception as e:
+        print(f"[AUTH DB] Error querying user '{cleaned_email}' from MySQL: {e}")
+    
+    users = _load_users_json()
+    return users.get(cleaned_email)
+
+
+def db_create_user(email: str, name: str, password_hash: str) -> bool:
+    """Insert a new email user record into MySQL users table."""
+    cleaned_email = email.lower().strip()
+    try:
+        conn = _get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO users (email, name, password) VALUES (%s, %s, %s)",
+                (cleaned_email, name.strip(), password_hash)
+            )
+        conn.close()
+
+        users = _load_users_json()
+        users[cleaned_email] = {
+            "email": cleaned_email,
+            "name": name.strip(),
+            "password": password_hash,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        _save_users_json(users)
+        return True
+    except pymysql.IntegrityError:
+        raise HTTPException(status_code=409, detail="An account with this email address already exists.")
+    except Exception as e:
+        print(f"[AUTH DB] Error creating user '{cleaned_email}' in MySQL: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+
+def db_update_password(email: str, new_password_hash: str) -> bool:
+    """Update user password in MySQL users table."""
+    cleaned_email = email.lower().strip()
+    try:
+        conn = _get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("UPDATE users SET password = %s WHERE email = %s", (new_password_hash, cleaned_email))
+        conn.close()
+
+        users = _load_users_json()
+        if cleaned_email in users:
+            users[cleaned_email]["password"] = new_password_hash
+            _save_users_json(users)
+        return True
+    except Exception as e:
+        print(f"[AUTH DB] Error updating password for '{cleaned_email}' in MySQL: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 def _gen_otp() -> str:
@@ -71,7 +202,7 @@ def _gen_otp() -> str:
 
 def _make_jwt(email: str, name: str) -> str:
     payload = {
-        "sub":   email,
+        "sub":   email.lower().strip(),
         "name":  name,
         "iat":   datetime.utcnow(),
         "exp":   datetime.utcnow() + timedelta(hours=JWT_EXPIRE_H),
@@ -91,7 +222,7 @@ def _send_email(to: str, subject: str, html_body: str) -> bool:
     if not SENDER_EMAIL or not SENDER_PASSWORD:
         print(
             f"\n{'='*55}\n"
-            f"[AUTH] ⚠️  SMTP NOT CONFIGURED — email to {to} skipped.\n"
+            f"[AUTH] [WARNING] SMTP NOT CONFIGURED — email to {to} skipped.\n"
             f"  Add to .env:\n"
             f"    SMTP_EMAIL=your-gmail@gmail.com\n"
             f"    SMTP_APP_PASSWORD=your-16-char-app-password\n"
@@ -106,12 +237,10 @@ def _send_email(to: str, subject: str, html_body: str) -> bool:
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
         if SMTP_PORT == 465:
-            # Direct SSL connection (Port 465)
             with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=15) as s:
                 s.login(SENDER_EMAIL, SENDER_PASSWORD)
                 s.sendmail(SENDER_EMAIL, [to], msg.as_string())
         else:
-            # STARTTLS upgrade (Port 587 — Gmail default)
             with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as s:
                 s.ehlo()
                 s.starttls()
@@ -119,100 +248,21 @@ def _send_email(to: str, subject: str, html_body: str) -> bool:
                 s.login(SENDER_EMAIL, SENDER_PASSWORD)
                 s.sendmail(SENDER_EMAIL, [to], msg.as_string())
 
-        print(f"[AUTH] ✅  Email sent successfully to {to}")
+        print(f"[AUTH] [OK] Email sent successfully to {to}")
         return True
     except smtplib.SMTPAuthenticationError:
         print(
-            f"[AUTH] ❌  Gmail authentication failed for '{SENDER_EMAIL}'.\n"
-            f"  → Make sure you are using a Gmail App Password, NOT your regular password.\n"
-            f"  → Generate one at: https://myaccount.google.com/apppasswords"
+            f"[AUTH] [ERROR] Gmail authentication failed for '{SENDER_EMAIL}'.\n"
+            f"  -> Make sure you are using a Gmail App Password, NOT your regular password.\n"
+            f"  -> Generate one at: https://myaccount.google.com/apppasswords"
         )
         return False
     except smtplib.SMTPConnectError:
-        print(f"[AUTH] ❌  Could not connect to {SMTP_SERVER}:{SMTP_PORT}. Check network or firewall.")
+        print(f"[AUTH] [ERROR] Could not connect to {SMTP_SERVER}:{SMTP_PORT}. Check network or firewall.")
         return False
     except Exception as e:
-        print(f"[AUTH] ❌  SMTP error: {type(e).__name__}: {e}")
+        print(f"[AUTH] [ERROR] SMTP error: {type(e).__name__}: {e}")
         return False
-
-
-def _is_phone_number(val: str) -> bool:
-    # Remove spacing and separators
-    if "@" in val:
-        return False
-    digits = [c for c in val if c.isdigit()]
-    return len(digits) >= 8
-
-
-def _send_sms(to: str, body: str) -> bool:
-    """Send SMS via Twilio or Fast2SMS if configured, otherwise print to console."""
-    TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-    TWILIO_AUTH_TOKEN  = os.getenv("TWILIO_AUTH_TOKEN")
-    TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
-    FAST2SMS_API_KEY = os.getenv("FAST2SMS_API_KEY")
-
-    # Clean the phone number
-    cleaned_to = "".join(c for c in to if c.isdigit() or c == "+")
-    if not cleaned_to.startswith("+") and len(cleaned_to) == 10:
-        cleaned_to = f"+91{cleaned_to}"
-
-    # Try Twilio first
-    if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER:
-        try:
-            from twilio.rest import Client
-            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-            message = client.messages.create(
-                body=body,
-                from_=TWILIO_PHONE_NUMBER,
-                to=cleaned_to
-            )
-            print(f"[AUTH] Twilio SMS sent to {cleaned_to}. SID: {message.sid}")
-            return True
-        except ImportError:
-            print("[AUTH] twilio package is not installed. Skipping Twilio.")
-        except Exception as e:
-            print(f"[AUTH] Twilio SMS error: {e}")
-
-    # Try Fast2SMS next
-    if FAST2SMS_API_KEY:
-        try:
-            import requests
-            url = "https://www.fast2sms.com/dev/bulkV2"
-            raw_num = "".join(c for c in cleaned_to if c.isdigit())
-            if len(raw_num) > 10 and raw_num.startswith("91"):
-                numbers = raw_num[2:]
-            else:
-                numbers = raw_num
-                
-            payload = {
-                "message": body,
-                "language": "english",
-                "route": "q",
-                "numbers": numbers
-            }
-            headers = {
-                'authorization': FAST2SMS_API_KEY,
-                'Content-Type': "application/x-www-form-urlencoded",
-                'Cache-Control': "no-cache"
-            }
-            response = requests.post(url, data=payload, headers=headers, timeout=10)
-            res_json = response.json()
-            if res_json.get("return"):
-                print(f"[AUTH] Fast2SMS sent successfully to {numbers}")
-                return True
-            else:
-                print(f"[AUTH] Fast2SMS error: {res_json.get('message')}")
-        except ImportError:
-            print("[AUTH] requests package is not installed. Skipping Fast2SMS.")
-        except Exception as e:
-            print(f"[AUTH] Fast2SMS API error: {e}")
-
-    # Fallback print to console
-    print(f"\n==========================================")
-    print(f"[SMS MOCK] Sending SMS to: {cleaned_to}")
-    print(f"[SMS MOCK] Content: {body}")
-    print(f"==========================================\n")
-    return False
 
 
 def _otp_email_html(otp: str, purpose: str = "registration") -> str:
@@ -241,7 +291,6 @@ def _otp_email_html(otp: str, purpose: str = "registration") -> str:
                     border:1px solid rgba(236,72,153,0.2);border-radius:20px;
                     overflow:hidden;box-shadow:0 24px 80px rgba(168,85,247,0.15);">
 
-        <!-- Header band -->
         <tr>
           <td style="background:linear-gradient(90deg,#7c3aed,#db2777);padding:28px 40px;text-align:center;">
             <div style="font-size:36px;line-height:1;">❤️</div>
@@ -251,7 +300,6 @@ def _otp_email_html(otp: str, purpose: str = "registration") -> str:
           </td>
         </tr>
 
-        <!-- Body -->
         <tr>
           <td style="padding:40px 40px 32px;text-align:center;">
             <h2 style="color:#f9a8d4;font-size:18px;font-weight:700;margin:0 0 8px;">
@@ -262,17 +310,15 @@ def _otp_email_html(otp: str, purpose: str = "registration") -> str:
               This code is valid for <strong style="color:#c084fc;">2 minutes</strong>.
             </p>
 
-            <!-- OTP digit boxes -->
             <div style="margin:0 auto 28px;display:inline-block;">
               {otp_digits}
             </div>
 
-            <!-- Warning box -->
             <div style="background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);
                         border-radius:10px;padding:14px 20px;margin-bottom:24px;">
               <p style="color:#fbbf24;font-size:12px;margin:0;line-height:1.6;">
-                🔒 Never share this code with anyone.<br>
-                FemCare AI will never ask for your OTP via phone or chat.
+                [SECURE] Never share this code with anyone.<br>
+                FemCare AI will never ask for your OTP via chat or third-party call.
               </p>
             </div>
 
@@ -282,12 +328,11 @@ def _otp_email_html(otp: str, purpose: str = "registration") -> str:
           </td>
         </tr>
 
-        <!-- Footer -->
         <tr>
           <td style="background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.05);
                      padding:20px 40px;text-align:center;">
             <p style="color:#334155;font-size:11px;margin:0;">
-              © 2026 FemCare AI &nbsp;·&nbsp; Reproductive Health Platform
+              © 2026 FemCare AI · Reproductive Health Platform
               <br>This is an automated message — please do not reply.
             </p>
           </td>
@@ -301,9 +346,15 @@ def _otp_email_html(otp: str, purpose: str = "registration") -> str:
 
 
 # ── Pydantic Models ───────────────────────────────────────────────────────────
+class RegisterRequest(BaseModel):
+    email:    str
+    password: str
+    name:     Optional[str] = ""
+
+
 class SendOTPRequest(BaseModel):
-    email: str
-    name:  Optional[str] = ""
+    email:   str
+    name:    Optional[str] = ""
     purpose: str = "registration"   # "registration" | "reset"
 
 
@@ -319,148 +370,173 @@ class LoginRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
-    email:       str
-    otp:         str
+    email:        str
+    otp:          str
     new_password: str
+
+
+# ── Helper for Email Validation ──────────────────────────────────────────────
+def _validate_email_str(email: str) -> str:
+    cleaned = email.lower().strip()
+    if "@" not in cleaned or "." not in cleaned.split("@")[-1]:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+    return cleaned
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
+@router.post("/register")
+def register(req: RegisterRequest):
+    """Direct user registration endpoint wired to MySQL database with bcrypt hashing."""
+    email = _validate_email_str(req.email)
+    
+    if not req.password:
+        raise HTTPException(status_code=400, detail="Password is required.")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+
+    existing = db_get_user(email)
+    if existing:
+        raise HTTPException(status_code=409, detail="An account with this email address already exists. Please log in.")
+
+    user_name = req.name.strip() if req.name else "User"
+    hashed_pwd = pwd_ctx.hash(req.password)
+    db_create_user(email, user_name, hashed_pwd)
+
+    token = _make_jwt(email, user_name)
+    return {"success": True, "token": token, "name": user_name, "email": email}
+
+
 @router.post("/send-otp")
 def send_otp(req: SendOTPRequest):
-    """Generate & send a 6-digit OTP. Works for both registration and password reset."""
-    users = _load_users()
+    """Generate & send a 6-digit OTP to the user's email after checking MySQL database."""
+    email = _validate_email_str(req.email)
+    existing = db_get_user(email)
 
-    is_phone = _is_phone_number(req.email)
-    contact_type = "phone number" if is_phone else "email address"
+    if req.purpose == "registration" and existing:
+        raise HTTPException(status_code=409, detail="An account with this email address already exists. Please log in.")
 
-    if req.purpose == "registration" and req.email in users:
-        raise HTTPException(status_code=409, detail=f"An account with this {contact_type} already exists. Please log in.")
-
-    if req.purpose == "reset" and req.email not in users:
-        raise HTTPException(status_code=404, detail=f"No account found with this {contact_type}.")
+    if req.purpose == "reset" and not existing:
+        raise HTTPException(status_code=404, detail="No account found with this email address.")
 
     otp = _gen_otp()
-    _otp_store[req.email] = {
+    _otp_store[email] = {
         "otp":        otp,
         "expires_at": time.time() + OTP_TTL_S,
         "purpose":    req.purpose,
         "name":       req.name or "",
     }
 
-    sent = False
-    if is_phone:
-        # Format phone number for UI display (+91XXXXXXXXXX)
-        cleaned_num = "".join(c for c in req.email if c.isdigit() or c == "+")
-        if not cleaned_num.startswith("+") and len(cleaned_num) == 10:
-            cleaned_num = f"+91{cleaned_num}"
-        sms_body = f"FemCare AI verification code: {otp}. Valid for 2 minutes."
-        sent = _send_sms(req.email, sms_body)
-        message = f"OTP sent to {cleaned_num}."
-    else:
-        subject = "🔐 FemCare AI — Your Verification Code"
-        sent = _send_email(req.email, subject, _otp_email_html(otp, req.purpose))
-        message = f"OTP sent to {req.email}. Check your inbox (or server console in dev mode)."
+    subject = "🔐 FemCare AI — Your Verification Code"
+    sent = _send_email(email, subject, _otp_email_html(otp, req.purpose))
+    message = f"OTP sent to {email}. Check your inbox (or server console in dev mode)."
 
-    # Always print the generated OTP directly in the VS Code terminal/console in bold green
-    print(f"\n====================\n\033[1;32m[OTP DEBUG] Sent to {req.email}: {otp}\033[0m\n====================\n")
+    print(f"\n====================\n[OTP DEBUG] Sent to {email}: {otp}\n====================\n")
 
     return {
         "success": True,
-        "email_sent": sent if not is_phone else False,
-        "sms_sent": sent if is_phone else False,
+        "email_sent": sent,
         "sent": sent,
         "message": message,
-        # DEV-ONLY: remove in production
         "dev_otp": otp if not sent else None,
     }
 
 
 @router.post("/verify-otp")
 def verify_otp(req: VerifyOTPRequest):
-    """Verify OTP → create account (registration) or confirm identity (reset step 1)."""
-    record = _otp_store.get(req.email)
+    """Verify OTP → create account in MySQL database (registration) or confirm identity (reset step 1)."""
+    email = _validate_email_str(req.email)
+    record = _otp_store.get(email)
+
     if not record:
-        raise HTTPException(status_code=400, detail="No OTP was requested for this contact.")
+        raise HTTPException(status_code=400, detail="No OTP was requested for this email.")
     if time.time() > record["expires_at"]:
-        _otp_store.pop(req.email, None)
+        _otp_store.pop(email, None)
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
     if record["otp"] != req.otp.strip():
         raise HTTPException(status_code=400, detail="Incorrect OTP. Please try again.")
 
-    _otp_store.pop(req.email, None)  # consume OTP
+    _otp_store.pop(email, None)  # consume OTP
 
     if record["purpose"] == "registration":
         if not req.password or len(req.password) < 6:
             raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
-        users = _load_users()
-        users[req.email] = {
-            "email":      req.email,
-            "name":       record["name"],
-            "password":   pwd_ctx.hash(req.password),
-            "created_at": datetime.utcnow().isoformat(),
-        }
-        _save_users(users)
-        token = _make_jwt(req.email, record["name"])
-        return {"success": True, "token": token, "name": record["name"], "email": req.email}
+        
+        existing = db_get_user(email)
+        if existing:
+            raise HTTPException(status_code=409, detail="An account with this email address already exists. Please log in.")
+
+        user_name = record["name"] or "User"
+        hashed_pwd = pwd_ctx.hash(req.password)
+        db_create_user(email, user_name, hashed_pwd)
+        token = _make_jwt(email, user_name)
+        return {"success": True, "token": token, "name": user_name, "email": email}
 
     # purpose == "reset" — mark email as OTP-verified for the reset step
-    _otp_store[f"reset_verified_{req.email}"] = {"verified": True, "expires_at": time.time() + 300}
+    _otp_store[f"reset_verified_{email}"] = {"verified": True, "expires_at": time.time() + 300}
     return {"success": True, "message": "Identity verified. You may now set a new password."}
 
 
 @router.post("/login")
 def login(req: LoginRequest):
-    users = _load_users()
-    user  = users.get(req.email)
+    """Verify user email & password against MySQL database and return JWT token."""
+    email = _validate_email_str(req.email)
+    user = db_get_user(email)
+    
     if not user or not pwd_ctx.verify(req.password, user["password"]):
-        contact_type = "phone number" if _is_phone_number(req.email) else "email"
-        raise HTTPException(status_code=401, detail=f"Invalid {contact_type} or password.")
-    token = _make_jwt(req.email, user["name"])
-    return {"success": True, "token": token, "name": user["name"], "email": req.email}
+        raise HTTPException(status_code=401, detail="Invalid email address or password.")
+    
+    token = _make_jwt(email, user["name"])
+    return {"success": True, "token": token, "name": user["name"], "email": email}
 
 
 @router.post("/reset-password")
 def reset_password(req: ResetPasswordRequest):
-    """Verify reset OTP + update password in one step (combined for simplicity)."""
-    # Check OTP
-    record = _otp_store.get(req.email)
-    # Also accept the pre-verified token from a two-step flow
-    pre = _otp_store.get(f"reset_verified_{req.email}")
+    """Verify reset OTP + update password in MySQL database."""
+    email = _validate_email_str(req.email)
+    record = _otp_store.get(email)
+    pre = _otp_store.get(f"reset_verified_{email}")
 
     if not record and not pre:
         raise HTTPException(status_code=400, detail="No reset session found. Please restart the process.")
 
     if record:
         if time.time() > record["expires_at"]:
-            _otp_store.pop(req.email, None)
+            _otp_store.pop(email, None)
             raise HTTPException(status_code=400, detail="OTP has expired.")
         if record["otp"] != req.otp.strip():
             raise HTTPException(status_code=400, detail="Incorrect OTP.")
-        _otp_store.pop(req.email, None)
+        _otp_store.pop(email, None)
 
     if pre:
         if time.time() > pre["expires_at"]:
-            _otp_store.pop(f"reset_verified_{req.email}", None)
+            _otp_store.pop(f"reset_verified_{email}", None)
             raise HTTPException(status_code=400, detail="Reset session expired. Please restart.")
-        _otp_store.pop(f"reset_verified_{req.email}", None)
+        _otp_store.pop(f"reset_verified_{email}", None)
 
     if not req.new_password or len(req.new_password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
 
-    users = _load_users()
-    if req.email not in users:
+    user = db_get_user(email)
+    if not user:
         raise HTTPException(status_code=404, detail="Account not found.")
 
-    users[req.email]["password"] = pwd_ctx.hash(req.new_password)
-    _save_users(users)
+    new_hash = pwd_ctx.hash(req.new_password)
+    db_update_password(email, new_hash)
     return {"success": True, "message": "Password updated successfully. You can now log in."}
 
 
 @router.get("/me")
 def get_me(authorization: Optional[str] = Header(None)):
+    """Fetch current authenticated user info from JWT token and MySQL database."""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Not authenticated.")
     token   = authorization.split(" ", 1)[1]
     payload = _decode_jwt(token)
-    return {"email": payload["sub"], "name": payload.get("name", ""), "success": True}
+    email   = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload.")
+
+    user = db_get_user(email)
+    user_name = user["name"] if user and user.get("name") else payload.get("name", "")
+    return {"email": email, "name": user_name, "success": True}

@@ -21,7 +21,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -29,7 +29,7 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
             display: ['Outfit', 'sans-serif'],
           },
           colors: {
@@ -50,7 +50,7 @@
     body {
       background-color: #0F172A;
       color: #F8FAFC;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
     }
     .glass-card {
       background: rgba(30, 41, 59, 0.75);
@@ -952,15 +952,9 @@
           <button class="auth-tab" onclick="authShowTab('register')">Register</button>
         </div>
         <div class="auth-field">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <label class="auth-label" id="loginLabel" style="margin-bottom:0;">Email Address</label>
-            <div style="display:flex; gap:6px;">
-              <button class="auth-link" id="loginToggleEmail" onclick="setContactType('login', 'email')" style="font-size:10px; text-decoration:none; color:#f9a8d4; font-weight:700; background:rgba(236,72,153,0.12); padding:2px 8px; border-radius:6px;">Email</button>
-              <button class="auth-link" id="loginTogglePhone" onclick="setContactType('login', 'phone')" style="font-size:10px; text-decoration:none; color:#94a3b8; font-weight:600; background:transparent; padding:2px 8px; border-radius:6px;">Phone</button>
-            </div>
-          </div>
+          <label class="auth-label">Email Address</label>
           <div class="auth-input-wrap">
-            <input id="loginEmail" type="text" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
+            <input id="loginEmail" type="email" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
           </div>
         </div>
         <div class="auth-field">
@@ -994,15 +988,9 @@
           </div>
         </div>
         <div class="auth-field">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <label class="auth-label" id="regLabel" style="margin-bottom:0;">Email Address</label>
-            <div style="display:flex; gap:6px;">
-              <button class="auth-link" id="regToggleEmail" onclick="setContactType('register', 'email')" style="font-size:10px; text-decoration:none; color:#f9a8d4; font-weight:700; background:rgba(236,72,153,0.12); padding:2px 8px; border-radius:6px;">Email</button>
-              <button class="auth-link" id="regTogglePhone" onclick="setContactType('register', 'phone')" style="font-size:10px; text-decoration:none; color:#94a3b8; font-weight:600; background:transparent; padding:2px 8px; border-radius:6px;">Phone</button>
-            </div>
-          </div>
+          <label class="auth-label">Email Address</label>
           <div class="auth-input-wrap">
-            <input id="regEmail" type="text" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
+            <input id="regEmail" type="email" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
           </div>
         </div>
         <div class="auth-field">
@@ -1018,7 +1006,7 @@
 
       <!-- ══ VIEW: OTP ══ -->
       <div id="viewOTP" style="display:none">
-        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;" id="otpTargetLabel">Enter the 6-digit code sent to</p>
+        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;" id="otpTargetLabel">Enter the 6-digit code sent to your email</p>
         <p style="text-align:center;font-size:13px;color:#f9a8d4;font-weight:700;margin:0 0 2px;" id="otpEmailDisplay"></p>
         <div class="otp-grid" id="otpGrid">
           <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
@@ -1043,17 +1031,11 @@
 
       <!-- ══ VIEW: FORGOT ══ -->
       <div id="viewForgot" style="display:none">
-        <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;text-align:center;">Enter your email or phone number to receive a reset code.</p>
+        <p style="font-size:13px;color:#94a3b8;margin:0 0 18px;text-align:center;">Enter your registered email address to receive a reset code.</p>
         <div class="auth-field">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <label class="auth-label" id="fpLabel" style="margin-bottom:0;">Email Address</label>
-            <div style="display:flex; gap:6px;">
-              <button class="auth-link" id="fpToggleEmail" onclick="setContactType('forgot', 'email')" style="font-size:10px; text-decoration:none; color:#f9a8d4; font-weight:700; background:rgba(236,72,153,0.12); padding:2px 8px; border-radius:6px;">Email</button>
-              <button class="auth-link" id="fpTogglePhone" onclick="setContactType('forgot', 'phone')" style="font-size:10px; text-decoration:none; color:#94a3b8; font-weight:600; background:transparent; padding:2px 8px; border-radius:6px;">Phone</button>
-            </div>
-          </div>
+          <label class="auth-label">Email Address</label>
           <div class="auth-input-wrap">
-            <input id="fpEmail" type="text" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
+            <input id="fpEmail" type="email" class="auth-input" placeholder="you@example.com" style="padding-right:14px">
           </div>
         </div>
         <button class="auth-btn" id="fpSendBtn" onclick="authSendResetOTP()">Send Reset Code →</button>
@@ -1062,7 +1044,7 @@
 
       <!-- ══ VIEW: RESET OTP ══ -->
       <div id="viewResetOTP" style="display:none">
-        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;" id="fpTargetLabel">Reset code sent to</p>
+        <p style="text-align:center;font-size:13px;color:#94a3b8;margin:0 0 4px;" id="fpTargetLabel">Reset code sent to your email</p>
         <p style="text-align:center;font-size:13px;color:#f9a8d4;font-weight:700;margin:0 0 2px;" id="fpEmailDisplay"></p>
         <div class="otp-grid" id="resetOTPGrid">
           <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]">
@@ -1142,71 +1124,6 @@
     function validateEmail(email) {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
-    function validatePhone(phone) {
-      return /^\+?[0-9]{7,15}$/.test(phone.replace(/[\s\-()]/g, ''));
-    }
-
-    function setContactType(view, type) {
-      if (view === 'login') {
-        loginContactType = type;
-        var emailBtn = $('loginToggleEmail');
-        var phoneBtn = $('loginTogglePhone');
-        var label = $('loginLabel');
-        var input = $('loginEmail');
-        if (type === 'email') {
-          emailBtn.style.color = '#f9a8d4'; emailBtn.style.background = 'rgba(236,72,153,0.12)'; emailBtn.style.fontWeight = '700';
-          phoneBtn.style.color = '#94a3b8'; phoneBtn.style.background = 'transparent'; phoneBtn.style.fontWeight = '600';
-          label.textContent = 'Email Address';
-          input.placeholder = 'you@example.com';
-          input.type = 'text';
-        } else {
-          phoneBtn.style.color = '#f9a8d4'; phoneBtn.style.background = 'rgba(236,72,153,0.12)'; phoneBtn.style.fontWeight = '700';
-          emailBtn.style.color = '#94a3b8'; emailBtn.style.background = 'transparent'; emailBtn.style.fontWeight = '600';
-          label.textContent = 'Phone Number';
-          input.placeholder = '+919876543210';
-          input.type = 'tel';
-        }
-      } else if (view === 'register') {
-        registerContactType = type;
-        var emailBtn = $('regToggleEmail');
-        var phoneBtn = $('regTogglePhone');
-        var label = $('regLabel');
-        var input = $('regEmail');
-        if (type === 'email') {
-          emailBtn.style.color = '#f9a8d4'; emailBtn.style.background = 'rgba(236,72,153,0.12)'; emailBtn.style.fontWeight = '700';
-          phoneBtn.style.color = '#94a3b8'; phoneBtn.style.background = 'transparent'; phoneBtn.style.fontWeight = '600';
-          label.textContent = 'Email Address';
-          input.placeholder = 'you@example.com';
-          input.type = 'text';
-        } else {
-          phoneBtn.style.color = '#f9a8d4'; phoneBtn.style.background = 'rgba(236,72,153,0.12)'; phoneBtn.style.fontWeight = '700';
-          emailBtn.style.color = '#94a3b8'; emailBtn.style.background = 'transparent'; emailBtn.style.fontWeight = '600';
-          label.textContent = 'Phone Number';
-          input.placeholder = '+919876543210';
-          input.type = 'tel';
-        }
-      } else if (view === 'forgot') {
-        forgotContactType = type;
-        var emailBtn = $('fpToggleEmail');
-        var phoneBtn = $('fpTogglePhone');
-        var label = $('fpLabel');
-        var input = $('fpEmail');
-        if (type === 'email') {
-          emailBtn.style.color = '#f9a8d4'; emailBtn.style.background = 'rgba(236,72,153,0.12)'; emailBtn.style.fontWeight = '700';
-          phoneBtn.style.color = '#94a3b8'; phoneBtn.style.background = 'transparent'; phoneBtn.style.fontWeight = '600';
-          label.textContent = 'Email Address';
-          input.placeholder = 'you@example.com';
-          input.type = 'text';
-        } else {
-          phoneBtn.style.color = '#f9a8d4'; phoneBtn.style.background = 'rgba(236,72,153,0.12)'; phoneBtn.style.fontWeight = '700';
-          emailBtn.style.color = '#94a3b8'; emailBtn.style.background = 'transparent'; emailBtn.style.fontWeight = '600';
-          label.textContent = 'Phone Number';
-          input.placeholder = '+919876543210';
-          input.type = 'tel';
-        }
-      }
-    }
-    window.setContactType = setContactType;
 
     /* ── View router ── */
     var VIEWS = ['viewLogin','viewRegister','viewOTP','viewForgot','viewResetOTP'];
@@ -1218,7 +1135,7 @@
       var subtitles = {
         login:    'Welcome back 💜',
         register: 'Create your account',
-        OTP:      'Verify contact info',
+        OTP:      'Verify email address',
         forgot:   'Forgot your password?',
         resetOTP: 'Reset your password'
       };
@@ -1279,9 +1196,12 @@
 
     /* ── Session ── */
     function saveSession(token, name, remember) {
-      var store = remember ? localStorage : sessionStorage;
-      store.setItem('fc_token', token);
-      store.setItem('fc_name',  name);
+      localStorage.setItem('fc_token', token);
+      localStorage.setItem('fc_name',  name);
+      if (remember) {
+        sessionStorage.setItem('fc_token', token);
+        sessionStorage.setItem('fc_name',  name);
+      }
     }
     function loadSession() {
       return localStorage.getItem('fc_token') || sessionStorage.getItem('fc_token');
@@ -1319,12 +1239,8 @@
       var pass  = $('loginPass').value;
       if (!email || !pass) { showMsg('Please fill in all fields.', 'error'); return; }
 
-      if (loginContactType === 'email' && !validateEmail(email)) {
+      if (!validateEmail(email)) {
         showMsg('Please enter a valid email address.', 'error');
-        return;
-      }
-      if (loginContactType === 'phone' && !validatePhone(email)) {
-        showMsg('Please enter a valid phone number.', 'error');
         return;
       }
 
@@ -1354,12 +1270,8 @@
       var pass  = $('regPass').value;
       if (!name || !email || !pass) { showMsg('Please fill in all fields.', 'error'); return; }
 
-      if (registerContactType === 'email' && !validateEmail(email)) {
+      if (!validateEmail(email)) {
         showMsg('Please enter a valid email address.', 'error');
-        return;
-      }
-      if (registerContactType === 'phone' && !validatePhone(email)) {
-        showMsg('Please enter a valid phone number.', 'error');
         return;
       }
 
@@ -1377,16 +1289,7 @@
           _devOTP = res.d.dev_otp || '';
           if (_devOTP) showMsg('DEV MODE — OTP: ' + _devOTP + ' (check server console)', 'info');
           
-          var isEmail = email.includes('@');
-          $('otpTargetLabel').textContent = isEmail ? 'Enter the 6-digit code sent to email' : 'Enter the 6-digit code sent to phone';
-          
-          var banner = $('otpFallbackBanner');
-          if (isEmail) {
-            banner.innerHTML = "Didn't receive email? Check <strong>Spam folder</strong> or try <strong>Phone Number</strong>";
-          } else {
-            banner.innerHTML = "Didn't receive SMS? Check your signal or try <strong>Email Address</strong>";
-          }
-          
+          $('otpTargetLabel').textContent = 'Enter the 6-digit code sent to your email';
           $('otpEmailDisplay').textContent = email;
           clearOTP('otpGrid');
           authShowView('OTP');
@@ -1446,17 +1349,11 @@
     window.authSendResetOTP = function(isResend) {
       clearMsg();
       var email = isResend ? _pendingEmail : $('fpEmail').value.trim();
-      if (!email) { showMsg('Please enter your email or phone number.', 'error'); return; }
+      if (!email) { showMsg('Please enter your registered email address.', 'error'); return; }
 
-      if (!isResend) {
-        if (forgotContactType === 'email' && !validateEmail(email)) {
-          showMsg('Please enter a valid email address.', 'error');
-          return;
-        }
-        if (forgotContactType === 'phone' && !validatePhone(email)) {
-          showMsg('Please enter a valid phone number.', 'error');
-          return;
-        }
+      if (!isResend && !validateEmail(email)) {
+        showMsg('Please enter a valid email address.', 'error');
+        return;
       }
 
       _pendingEmail = email; _otpPurpose = 'reset';
@@ -1471,16 +1368,7 @@
           showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
           _devOTP = res.d.dev_otp || '';
           
-          var isEmail = email.includes('@');
-          $('fpTargetLabel').textContent = isEmail ? 'Reset code sent to email' : 'Reset code sent to phone';
-          
-          var banner = $('otpResetFallbackBanner');
-          if (isEmail) {
-            banner.innerHTML = "Didn't receive email? Check <strong>Spam folder</strong> or try <strong>Phone Number</strong>";
-          } else {
-            banner.innerHTML = "Didn't receive SMS? Check your signal or try <strong>Email Address</strong>";
-          }
-
+          $('fpTargetLabel').textContent = 'Reset code sent to your email';
           $('fpEmailDisplay').textContent = email;
           clearOTP('resetOTPGrid');
           if (_devOTP) showMsg('DEV — Reset OTP: ' + _devOTP, 'info');
@@ -2433,16 +2321,44 @@
 
           {/* MAIN CONTENT */}
           <main className="main-content">
+            {/* TOP NAVIGATION BAR */}
+            <div className="flex justify-between items-center mb-6 px-2">
+              {/* Left Side: Status */}
+              <div className="flex items-center gap-3">
+                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                   RandomForest ML Online
+                 </div>
+                 <div className="text-xs text-slate-400 font-medium hidden sm:block">
+                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                 </div>
+              </div>
+              
+              {/* Right Side: User Menu */}
+              <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-800/50 p-1.5 rounded-lg transition">
+                   <div className="text-right hidden sm:block">
+                     <div className="text-xs font-semibold text-slate-200">{overviewData ? overviewData.user_name : 'Valued User'}</div>
+                     <div className="text-[10px] text-slate-400">Profile Settings</div>
+                   </div>
+                   <div className="w-9 h-9 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm border border-indigo-500/30">
+                     {overviewData && overviewData.user_name ? overviewData.user_name.substring(0, 2).toUpperCase() : 'US'}
+                   </div>
+                 </div>
+                 <button onClick={() => { localStorage.removeItem('fc_token'); sessionStorage.removeItem('fc_token'); window.location.reload(); }} className="text-xs text-slate-400 hover:text-rose-400 font-semibold transition px-2">Sign Out</button>
+              </div>
+            </div>
+
             {/* HERO BANNER */}
-            <div className="hero-banner rounded-2xl p-6 mb-6">
+            <div className="rounded-2xl p-6 mb-6" style={{ background: '#111827', border: '1px solid rgba(255, 255, 255, 0.07)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                 <div>
-                  <h2 className="font-display text-2xl md:text-3xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-teal-300 bg-clip-text text-transparent">
+                  <h2 className="font-display text-2xl md:text-3xl font-bold bg-gradient-to-r from-rose-400 via-indigo-400 to-emerald-300 bg-clip-text text-transparent">
                     Welcome back, {overviewData ? overviewData.user_name : 'Valued User'} 🌸
                   </h2>
                   <p className="text-sm text-slate-400 mt-1">Real-time ML cycle forecasting, ovulation windows, and reproductive health markers.</p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-pink-500/15 border border-pink-500/40 text-pink-400 text-xs font-semibold self-start sm:self-auto">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/40 text-indigo-400 text-xs font-semibold self-start sm:self-auto">
                   Active Mode: {operatingMode}
                 </span>
               </div>
@@ -2452,22 +2368,22 @@
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {operatingMode === '👶 Pregnancy Mode' ? (
                 <>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Estimated Due Date</div>
                     <div className="text-2xl font-bold text-purple-400 mt-1">Oct 28, 2026</div>
                     <div className="text-xs text-emerald-400 mt-1">Naegele's Rule</div>
                   </div>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Gestational Age</div>
                     <div className="text-2xl font-bold text-teal-300 mt-1">12w 4d</div>
                     <div className="text-xs text-slate-400 mt-1">Current Progress</div>
                   </div>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Current Trimester</div>
                     <div className="text-2xl font-bold text-pink-400 mt-1">1st Trimester</div>
                     <div className="text-xs text-slate-400 mt-1">Prenatal Stage</div>
                   </div>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Folic Acid & Hydration</div>
                     <div className="text-2xl font-bold text-sky-400 mt-1">400 mcg</div>
                     <div className="text-xs text-slate-400 mt-1">Daily Rec</div>
@@ -2475,48 +2391,63 @@
                 </>
               ) : operatingMode === '🌿 Conception / Ovulation Peak' ? (
                 <>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Peak LH Ovulation</div>
                     <div className="text-2xl font-bold text-purple-400 mt-1">{activeMLData ? formatDateStr(activeMLData.ovulation_date) : '---'}</div>
                     <div className="text-xs text-slate-400 mt-1">Target Ovulation</div>
                   </div>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Conception Probability</div>
                     <div className="text-2xl font-bold text-teal-300 mt-1">98% Peak</div>
                     <div className="text-xs text-emerald-400 mt-1">Optimal Window</div>
                   </div>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Fertile Window Range</div>
                     <div className="text-sm font-bold text-pink-400 mt-1.5">{activeMLData ? `${formatDateStr(activeMLData.fertile_window_start)} - ${formatDateStr(activeMLData.fertile_window_end)}` : '---'}</div>
                     <div className="text-xs text-slate-400 mt-1">6 Days Window</div>
                   </div>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Cycle Forecast</div>
                     <div className="text-2xl font-bold text-sky-400 mt-1">{activeMLData ? activeMLData.predicted_cycle_days : '28'} Days</div>
-                    <div className="text-xs text-slate-400 mt-1">Confidence: {activeMLData ? Math.round(activeMLData.confidence_score * 100) : '90'}%</div>
+                    <div className="mt-2 w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                      <div className="h-full bg-sky-400 rounded-full" style={{ width: `${activeMLData ? Math.round(activeMLData.confidence_score * 100) : '90'}%` }}></div>
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-1">Confidence: {activeMLData ? Math.round(activeMLData.confidence_score * 100) : '90'}%</div>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)] relative overflow-hidden">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{t('metricDaysUntilPeriod')}</div>
-                    <div className="text-2xl font-bold text-pink-400 mt-1">{activeMLData ? activeMLData.days_until_next_period : '14'} {t('metricDays')}</div>
-                    <div className="text-xs text-slate-400 mt-1">{t('metricExpected')}: {activeMLData ? formatDateStr(activeMLData.next_period_start) : '---'}</div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <div className="relative w-8 h-8 shrink-0 flex items-center justify-center">
+                        <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 36 36">
+                          <path className="text-slate-700/50" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                          <path className="text-rose-500" strokeWidth="3" strokeDasharray={`${activeMLData ? Math.min(100, Math.max(0, (28 - parseInt(activeMLData.days_until_next_period)) / 28 * 100)) : 50}, 100`} stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-rose-400">🩸</div>
+                      </div>
+                      <div className="text-2xl font-bold text-rose-400">{activeMLData ? activeMLData.days_until_next_period : '14'} <span className="text-sm font-medium">{t('metricDays')}</span></div>
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-2">{t('metricExpected')}: {activeMLData ? formatDateStr(activeMLData.next_period_start) : '---'}</div>
                   </div>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{t('metricPredictedOvulation')}</div>
                     <div className="text-2xl font-bold text-purple-400 mt-1">{activeMLData ? formatDateStr(activeMLData.ovulation_date) : '---'}</div>
-                    <div className="text-xs text-slate-400 mt-1">{t('metricFertile')}: {activeMLData ? formatDateStr(activeMLData.fertile_window_start) : '---'}</div>
+                    <div className="text-xs text-slate-400 mt-2">{t('metricFertile')}: {activeMLData ? formatDateStr(activeMLData.fertile_window_start) : '---'}</div>
                   </div>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{t('metricForecastCycleLength')}</div>
-                    <div className="text-2xl font-bold text-teal-300 mt-1">{activeMLData ? activeMLData.predicted_cycle_days : '28'} {t('metricDays')}</div>
-                    <div className="text-xs text-slate-400 mt-1">{t('metricConfidence')}: {activeMLData ? Math.round(activeMLData.confidence_score * 100) : '90'}%</div>
+                    <div className="text-2xl font-bold text-teal-300 mt-1">{activeMLData ? activeMLData.predicted_cycle_days : '28'} <span className="text-sm font-medium">{t('metricDays')}</span></div>
+                    <div className="mt-2 w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                      <div className="h-full bg-teal-400 rounded-full transition-all duration-500" style={{ width: `${activeMLData ? Math.round(activeMLData.confidence_score * 100) : '90'}%` }}></div>
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-1">{t('metricConfidence')}: {activeMLData ? Math.round(activeMLData.confidence_score * 100) : '90'}%</div>
                   </div>
-                  <div className="glass-card rounded-2xl p-4">
+                  <div className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_25px_-5px_rgba(244,63,94,0.15)]">
                     <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{t('metricCurrentPhase')}</div>
-                    <div className="text-sm font-bold text-pink-400 mt-1.5 px-2.5 py-1 bg-pink-500/10 border border-pink-500/30 rounded-lg inline-block">{activeMLData ? activeMLData.current_phase : 'Follicular'}</div>
-                    <div className="text-xs text-slate-400 mt-1">Cycle Day {activeMLData ? activeMLData.current_cycle_day : '14'}</div>
+                    <div className="text-sm font-bold text-indigo-400 mt-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/30 rounded-lg inline-block">{activeMLData ? activeMLData.current_phase : 'Follicular'}</div>
+                    <div className="text-xs text-slate-400 mt-2">Cycle Day {activeMLData ? activeMLData.current_cycle_day : '14'}</div>
                   </div>
                 </>
               )}
@@ -2526,18 +2457,31 @@
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 {overviewData && overviewData.anomaly_data && (
-                  <div className="glass-card rounded-2xl p-5 border border-emerald-500/30 bg-emerald-500/5">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-semibold text-slate-100 text-base">🤖 AI Health Insight: {overviewData.anomaly_data.summary_text}</h4>
-                      <span className="text-xs text-slate-400">Cycle Std Dev: {overviewData.anomaly_data.std_length} Days</span>
+                  <div className="rounded-2xl p-6" style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(16, 185, 129, 0.2)', boxShadow: '0 8px 32px 0 rgba(16, 185, 129, 0.05)', backdropFilter: 'blur(12px)' }}>
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-emerald-500/20">
+                          ✨
+                        </div>
+                        <div>
+                          <h4 className="font-display font-bold text-slate-100 text-lg">AI Health Insight</h4>
+                          <div className="text-sm font-medium text-emerald-400 mt-0.5">{overviewData.anomaly_data.summary_text}</div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-xs font-semibold text-slate-300 self-start sm:self-auto">
+                        Cycle Variability: {overviewData.anomaly_data.std_length} Days
+                      </span>
                     </div>
-                    <div className="text-xs text-slate-300 space-y-1 leading-relaxed">
+                    <div className="text-sm text-slate-300 space-y-2 leading-relaxed bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
                       {overviewData.anomaly_data.insights.map((ins, idx) => (
-                        <div key={idx}><b>{ins.title}:</b> {ins.desc}</div>
+                        <div key={idx} className="flex gap-2">
+                           <span className="text-emerald-400 mt-0.5">▪</span>
+                           <div><b className="text-slate-200">{ins.title}:</b> <span className="text-slate-400">{ins.desc}</span></div>
+                        </div>
                       ))}
                     </div>
-                    <hr className="border-slate-700/60 my-2" />
-                    <p className="text-[10px] text-slate-400 italic">{overviewData.anomaly_data.disclaimer}</p>
+                    <hr className="border-slate-700/60 my-4" />
+                    <p className="text-[10px] text-slate-500 italic uppercase tracking-wider font-semibold">{overviewData.anomaly_data.disclaimer}</p>
                   </div>
                 )}
 
@@ -2546,62 +2490,72 @@
                     <span>⚙️</span> {t('inputCalibrationTitle')}
                   </h3>
                   <form onSubmit={handleRunPrediction} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">📅 {t('baselineTitle')}</h4>
+                    <div className="space-y-4 bg-slate-800/30 p-5 rounded-2xl border border-slate-700/50">
+                      <h4 className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-2">📅 {t('baselineTitle')}</h4>
                       <div>
-                        <label className="block text-xs text-slate-300 mb-1">{t('lastPeriodDate')}</label>
+                        <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('lastPeriodDate')}</label>
                         <input
                           type="date"
                           value={formData.last_period_date}
                           onChange={(e) => setFormData({ ...formData, last_period_date: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                          className="w-full bg-slate-900 border border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-300 mb-1">{t('ageYears')}</label>
+                        <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('ageYears')}</label>
                         <input
                           type="number"
                           value={formData.age}
                           onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                          className="w-full bg-slate-900 border border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🔄 {t('historicalDurationTitle')}</h4>
+                    <div className="space-y-4 bg-slate-800/30 p-5 rounded-2xl border border-slate-700/50">
+                      <h4 className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-2">🔄 {t('historicalDurationTitle')}</h4>
                       <div>
-                        <label className="block text-xs text-slate-300 mb-1">{t('lastCycleDuration')}</label>
+                        <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('lastCycleDuration')}</label>
                         <input
                           type="number"
                           value={formData.last_cycle_length}
                           onChange={(e) => setFormData({ ...formData, last_cycle_length: parseFloat(e.target.value) })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                          className="w-full bg-slate-900 border border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-300 mb-1">{t('secondLastCycleDuration')}</label>
+                        <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('secondLastCycleDuration')}</label>
                         <input
                           type="number"
                           value={formData.cycle_length_2}
                           onChange={(e) => setFormData({ ...formData, cycle_length_2: parseFloat(e.target.value) })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200"
+                          className="w-full bg-slate-900 border border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🌿 {t('lifestyleMarkersTitle')}</h4>
+                    <div className="space-y-4 bg-slate-800/30 p-5 rounded-2xl border border-slate-700/50">
+                      <h4 className="text-[11px] font-bold text-rose-400 uppercase tracking-wider mb-2">🌿 {t('lifestyleMarkersTitle')}</h4>
                       <div>
-                        <label className="block text-xs text-slate-300 mb-1">{t('stressLevel')}</label>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <label className="block text-xs font-medium text-slate-300">{t('stressLevel')}</label>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${formData.stress_level <= 2 ? 'bg-emerald-500/20 text-emerald-400' : formData.stress_level === 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                            {formData.stress_level <= 2 ? 'Low' : formData.stress_level === 3 ? 'Medium' : 'High'} ({formData.stress_level})
+                          </span>
+                        </div>
                         <input
                           type="range"
                           min="1"
                           max="5"
+                          step="1"
                           value={formData.stress_level}
                           onChange={(e) => setFormData({ ...formData, stress_level: parseInt(e.target.value) })}
-                          className="w-full accent-pink-500"
+                          className="w-full accent-rose-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer mt-2"
                         />
+                        <div className="flex justify-between text-[9px] text-slate-500 mt-2 font-semibold">
+                          <span>Low (1)</span>
+                          <span>High (5)</span>
+                        </div>
                       </div>
                     </div>
 
