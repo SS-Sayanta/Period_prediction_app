@@ -1227,7 +1227,7 @@
           if (d && d.success) { revealApp(d.name || getStoredName()); }
           else { localStorage.removeItem('fc_token'); sessionStorage.removeItem('fc_token'); }
         })
-        .catch(function(){ /* offline — still show auth */ });
+        .catch(function(err){ console.error("Network Error:", err); /* offline — still show auth */ });
     }
 
     /* ═══════════════════ AUTH ACTIONS ═══════════════════ */
@@ -1258,7 +1258,7 @@
           showMsg(res.d.detail || 'Login failed. Please check your credentials.', 'error');
         }
       })
-      .catch(function(){ showMsg('Network error. Please try again.', 'error'); })
+      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error. Please try again.', 'error'); })
       .finally(function(){ setLoading('loginBtn', false, 'Sign In →'); });
     };
 
@@ -1299,7 +1299,7 @@
           showMsg(res.d.detail || 'Failed to send OTP.', 'error');
         }
       })
-      .catch(function(){ showMsg('Network error.', 'error'); })
+      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error.', 'error'); })
       .finally(function(){ setLoading('regBtn', false, 'Continue & Verify →'); });
     };
 
@@ -1318,7 +1318,7 @@
         else showMsg('New OTP sent!', 'ok');
         startTimer('otpTimer', 'resendBtn', 120);
       })
-      .catch(function(){ showMsg('Failed to resend.','error'); });
+      .catch(function(err){ console.error("Network Error:", err); showMsg('Failed to resend.','error'); });
     };
 
     /* VERIFY REGISTRATION OTP */
@@ -1341,7 +1341,7 @@
           showMsg(res.d.detail || 'Incorrect OTP. Try again.', 'error');
         }
       })
-      .catch(function(){ showMsg('Network error.','error'); })
+      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error.','error'); })
       .finally(function(){ setLoading('verifyOTPBtn', false, 'Verify & Activate Account ✓'); });
     };
 
@@ -1379,7 +1379,7 @@
           showMsg(res.d.detail || 'Failed to send reset code.', 'error');
         }
       })
-      .catch(function(){ showMsg('Network error.','error'); })
+      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error.','error'); })
       .finally(function(){ setLoading('fpSendBtn', false, 'Send Reset Code →'); });
     };
 
@@ -1404,7 +1404,7 @@
           showMsg(res.d.detail || 'Failed to reset password.', 'error');
         }
       })
-      .catch(function(){ showMsg('Network error.','error'); })
+      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error.','error'); })
       .finally(function(){ setLoading('resetBtn', false, 'Update Password →'); });
     };
 

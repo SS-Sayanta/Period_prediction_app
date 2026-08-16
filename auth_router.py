@@ -69,14 +69,15 @@ def _get_db_connection():
         password=DB_PASSWORD,
         database=DB_NAME,
         cursorclass=pymysql.cursors.DictCursor,
-        autocommit=True
+        autocommit=True,
+        ssl={"ssl_mode": "PREFERRED"}
     )
 
 
 def init_db() -> None:
     """Ensure MySQL database 'femcare_db', 'users' table, and migrate legacy json users."""
     try:
-        conn = pymysql.connect(host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASSWORD)
+        conn = pymysql.connect(host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASSWORD, ssl={"ssl_mode": "PREFERRED"})
         with conn.cursor() as cursor:
             cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
         conn.close()
