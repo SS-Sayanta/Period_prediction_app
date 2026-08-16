@@ -1249,7 +1249,14 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: email, password: password })
       })
-      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
+      .then(function(r) {
+        return r.text().then(function(txt) {
+          var d;
+          try { d = JSON.parse(txt); } catch(e) { d = { detail: txt || r.statusText }; }
+          if (!r.ok) console.error("API Error: Status", r.status, d.detail);
+          return { ok: r.ok, d: d };
+        });
+      })
       .then(function(res) {
         if (res.ok && res.d.success) {
           saveSession(res.d.token, res.d.name, $('rememberMe').checked);
@@ -1282,7 +1289,14 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: email, name: name, purpose: 'registration' })
       })
-      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
+      .then(function(r) {
+        return r.text().then(function(txt) {
+          var d;
+          try { d = JSON.parse(txt); } catch(e) { d = { detail: txt || r.statusText }; }
+          if (!r.ok) console.error("API Error: Status", r.status, d.detail);
+          return { ok: r.ok, d: d };
+        });
+      })
       .then(function(res) {
         if (res.ok) {
           showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
@@ -1332,7 +1346,14 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: _pendingEmail, otp: otp, password: pass })
       })
-      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
+      .then(function(r) {
+        return r.text().then(function(txt) {
+          var d;
+          try { d = JSON.parse(txt); } catch(e) { d = { detail: txt || r.statusText }; }
+          if (!r.ok) console.error("API Error: Status", r.status, d.detail);
+          return { ok: r.ok, d: d };
+        });
+      })
       .then(function(res) {
         if (res.ok && res.d.success) {
           saveSession(res.d.token, res.d.name, false);
@@ -1362,7 +1383,14 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: email, purpose: 'reset' })
       })
-      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
+      .then(function(r) {
+        return r.text().then(function(txt) {
+          var d;
+          try { d = JSON.parse(txt); } catch(e) { d = { detail: txt || r.statusText }; }
+          if (!r.ok) console.error("API Error: Status", r.status, d.detail);
+          return { ok: r.ok, d: d };
+        });
+      })
       .then(function(res) {
         if (res.ok) {
           showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
@@ -1395,7 +1423,14 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: _pendingEmail, otp: otp, new_password: pass })
       })
-      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
+      .then(function(r) {
+        return r.text().then(function(txt) {
+          var d;
+          try { d = JSON.parse(txt); } catch(e) { d = { detail: txt || r.statusText }; }
+          if (!r.ok) console.error("API Error: Status", r.status, d.detail);
+          return { ok: r.ok, d: d };
+        });
+      })
       .then(function(res) {
         if (res.ok && res.d.success) {
           showMsg('Password updated! Please sign in.', 'ok');
