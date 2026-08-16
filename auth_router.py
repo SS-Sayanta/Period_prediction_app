@@ -26,7 +26,7 @@ from typing import Optional, Dict, Any
 
 import pymysql
 import pymysql.cursors
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from jose import jwt, JWTError
@@ -385,8 +385,24 @@ def _validate_email_str(email: str) -> str:
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
+async def get_register_req(request: Request) -> RegisterRequest:
+    ctype = request.headers.get("content-type", "")
+    if "application/json" in ctype:
+        data = await request.json()
+        return RegisterRequest(**data)
+    form = await request.form()
+    return RegisterRequest(email=str(form.get("email","")), password=str(form.get("password","")), name=str(form.get("name","")))
+
+async def get_login_req(request: Request) -> LoginRequest:
+    ctype = request.headers.get("content-type", "")
+    if "application/json" in ctype:
+        data = await request.json()
+        return LoginRequest(**data)
+    form = await request.form()
+    return LoginRequest(email=str(form.get("email","")), password=str(form.get("password","")))
+
 @router.post("/register")
-def register(req: RegisterRequest):
+def register(req: RegisterRequest = Depends(get_register_req)):
     """Direct user registration endpoint wired to MySQL database with bcrypt hashing."""
     email = _validate_email_str(req.email)
     
@@ -478,7 +494,7 @@ def verify_otp(req: VerifyOTPRequest):
 
 
 @router.post("/login")
-def login(req: LoginRequest):
+def login(req: LoginRequest = Depends(get_login_req)):
     """Verify user email & password against MySQL database and return JWT token."""
     email = _validate_email_str(req.email)
     user = db_get_user(email)

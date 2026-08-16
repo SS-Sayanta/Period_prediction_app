@@ -1249,7 +1249,7 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: email, password: pass })
       })
-      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
       .then(function(res) {
         if (res.ok && res.d.success) {
           saveSession(res.d.token, res.d.name, $('rememberMe').checked);
@@ -1282,7 +1282,7 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: email, name: name, purpose: 'registration' })
       })
-      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
       .then(function(res) {
         if (res.ok) {
           showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
@@ -1310,7 +1310,7 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: _pendingEmail, name: _pendingName, purpose: _otpPurpose })
       })
-      .then(function(r){ return r.json(); })
+      .then(function(r){ if(!r.ok) console.error("API Error: Status", r.status); return r.json(); })
       .then(function(d){
         showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
         _devOTP = d.dev_otp || '';
@@ -1332,7 +1332,7 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: _pendingEmail, otp: otp, password: pass })
       })
-      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
       .then(function(res) {
         if (res.ok && res.d.success) {
           saveSession(res.d.token, res.d.name, false);
@@ -1362,7 +1362,7 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: email, purpose: 'reset' })
       })
-      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
       .then(function(res) {
         if (res.ok) {
           showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
@@ -1395,7 +1395,7 @@
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: _pendingEmail, otp: otp, new_password: pass })
       })
-      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
       .then(function(res) {
         if (res.ok && res.d.success) {
           showMsg('Password updated! Please sign in.', 'ok');
@@ -1847,7 +1847,7 @@
           const pDate = formData.last_period_date || (overviewData && overviewData.feature_summary ? overviewData.feature_summary.last_period_date : new Date().toISOString().split('T')[0]);
           const cycleLen = overviewData ? overviewData.predicted_cycle_days : formData.last_cycle_length;
           const res = await fetch(`/api/calendar/events?year=${calYear}&month=${calMonth}&last_period_date=${pDate}&cycle_days=${cycleLen}`);
-          if (!res.ok) throw new Error('Calendar API response error');
+          if (!res.ok) { console.error("API Error (Status " + res.status + "):", 'Calendar API response error'); throw new Error('Calendar API response error'); }
           const data = await res.json();
           setCalendarData(data);
         } catch (err) {
@@ -1874,7 +1874,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
           });
-          if (!res.ok) throw new Error('Prediction API Error');
+          if (!res.ok) { console.error("API Error (Status " + res.status + "):", 'Prediction API Error'); throw new Error('Prediction API Error'); }
           const data = await res.json();
           setOverviewData(data);
           setLastPredictionResult(data);
@@ -1904,6 +1904,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(symptomForm)
           });
+          if (!res.ok) { console.error("API Error: Status " + res.status); }
           if (res.ok) {
             showToast('✓ Daily symptom log saved successfully!', 'success');
             if (activeTab === 'calendar') fetchCalendar();
@@ -1926,6 +1927,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(feedbackForm)
           });
+          if (!res.ok) { console.error("API Error: Status " + res.status); }
           if (res.ok) {
             showToast('✓ Ground truth period verified! Predictions recalibrated.', 'success');
             fetchOverview();
@@ -2074,6 +2076,7 @@
               notes: daySymptomForm.notes
             })
           });
+          if (!res.ok) { console.error("API Error: Status " + res.status); }
           if (res.ok) {
             showToast(`✓ Symptom log saved for ${formatDateStr(selectedDay.date)}`, 'success');
             setSelectedDay(null);
