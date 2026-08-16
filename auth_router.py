@@ -54,7 +54,7 @@ DB_NAME     = os.getenv("DB_NAME", "femcare_db")
 
 # ── Password Hashing & Router Initialization ─────────────────────────────────
 pwd_ctx  = CryptContext(schemes=["bcrypt"], deprecated="auto")
-router   = APIRouter(prefix="/api/auth", tags=["auth"])
+router   = APIRouter(prefix="/auth", tags=["auth"])
 
 # In-memory OTP store: { email: {otp, expires_at, purpose} }
 _otp_store: Dict[str, Dict[str, Any]] = {}

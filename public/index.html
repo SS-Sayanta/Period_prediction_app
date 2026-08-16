@@ -1221,13 +1221,13 @@
     /* ── Auto-login if session exists ── */
     var existingToken = loadSession();
     if (existingToken) {
-      fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + existingToken } })
+      fetch('/auth/me', { headers: { 'Authorization': 'Bearer ' + existingToken } })
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(d){
           if (d && d.success) { revealApp(d.name || getStoredName()); }
           else { localStorage.removeItem('fc_token'); sessionStorage.removeItem('fc_token'); }
         })
-        .catch(function(err){ console.error("Network Error:", err); /* offline — still show auth */ });
+        .catch(function(err){ console.error("Auth Exception:", err); /* offline — still show auth */ });
     }
 
     /* ═══════════════════ AUTH ACTIONS ═══════════════════ */
@@ -1236,7 +1236,7 @@
     window.authDoLogin = function() {
       clearMsg();
       var email = $('loginEmail').value.trim();
-      var pass  = $('loginPass').value;
+      var password  = $('loginPass').value;
       if (!email || !pass) { showMsg('Please fill in all fields.', 'error'); return; }
 
       if (!validateEmail(email)) {
@@ -1245,9 +1245,9 @@
       }
 
       setLoading('loginBtn', true, 'Signing in →');
-      fetch('/api/auth/login', {
+      fetch('/auth/login', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ email: email, password: pass })
+        body: JSON.stringify({ email: email, password: password })
       })
       .then(function(r){ return r.json().then(function(d){ if(!r.ok) console.error("API Error: Status", r.status); return {ok:r.ok,d:d}; }); })
       .then(function(res) {
@@ -1258,7 +1258,7 @@
           showMsg(res.d.detail || 'Login failed. Please check your credentials.', 'error');
         }
       })
-      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error. Please try again.', 'error'); })
+      .catch(function(err){ console.error("Auth Exception:", err); showMsg('Network error. Please try again.', 'error'); })
       .finally(function(){ setLoading('loginBtn', false, 'Sign In →'); });
     };
 
@@ -1278,7 +1278,7 @@
       if (pass.length < 6) { showMsg('Password must be at least 6 characters.', 'error'); return; }
       _pendingEmail = email; _pendingName = name; _otpPurpose = 'registration';
       setLoading('regBtn', true, 'Sending OTP...');
-      fetch('/api/auth/send-otp', {
+      fetch('/auth/send-otp', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: email, name: name, purpose: 'registration' })
       })
@@ -1299,14 +1299,14 @@
           showMsg(res.d.detail || 'Failed to send OTP.', 'error');
         }
       })
-      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error.', 'error'); })
+      .catch(function(err){ console.error("Auth Exception:", err); showMsg('Network error.', 'error'); })
       .finally(function(){ setLoading('regBtn', false, 'Continue & Verify →'); });
     };
 
     /* RESEND OTP */
     window.authResendOTP = function() {
       clearMsg();
-      fetch('/api/auth/send-otp', {
+      fetch('/auth/send-otp', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: _pendingEmail, name: _pendingName, purpose: _otpPurpose })
       })
@@ -1318,7 +1318,7 @@
         else showMsg('New OTP sent!', 'ok');
         startTimer('otpTimer', 'resendBtn', 120);
       })
-      .catch(function(err){ console.error("Network Error:", err); showMsg('Failed to resend.','error'); });
+      .catch(function(err){ console.error("Auth Exception:", err); showMsg('Failed to resend.','error'); });
     };
 
     /* VERIFY REGISTRATION OTP */
@@ -1328,7 +1328,7 @@
       var pass = $('regPass').value;
       if (otp.length < 6) { showMsg('Please enter all 6 digits.', 'error'); return; }
       setLoading('verifyOTPBtn', true, 'Verifying...');
-      fetch('/api/auth/verify-otp', {
+      fetch('/auth/verify-otp', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: _pendingEmail, otp: otp, password: pass })
       })
@@ -1341,7 +1341,7 @@
           showMsg(res.d.detail || 'Incorrect OTP. Try again.', 'error');
         }
       })
-      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error.','error'); })
+      .catch(function(err){ console.error("Auth Exception:", err); showMsg('Network error.','error'); })
       .finally(function(){ setLoading('verifyOTPBtn', false, 'Verify & Activate Account ✓'); });
     };
 
@@ -1358,7 +1358,7 @@
 
       _pendingEmail = email; _otpPurpose = 'reset';
       setLoading('fpSendBtn', true, 'Sending...');
-      fetch('/api/auth/send-otp', {
+      fetch('/auth/send-otp', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: email, purpose: 'reset' })
       })
@@ -1379,7 +1379,7 @@
           showMsg(res.d.detail || 'Failed to send reset code.', 'error');
         }
       })
-      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error.','error'); })
+      .catch(function(err){ console.error("Auth Exception:", err); showMsg('Network error.','error'); })
       .finally(function(){ setLoading('fpSendBtn', false, 'Send Reset Code →'); });
     };
 
@@ -1391,7 +1391,7 @@
       if (otp.length < 6) { showMsg('Please enter the 6-digit code.', 'error'); return; }
       if (pass.length < 6) { showMsg('Password must be at least 6 characters.', 'error'); return; }
       setLoading('resetBtn', true, 'Updating...');
-      fetch('/api/auth/reset-password', {
+      fetch('/auth/reset-password', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ email: _pendingEmail, otp: otp, new_password: pass })
       })
@@ -1404,7 +1404,7 @@
           showMsg(res.d.detail || 'Failed to reset password.', 'error');
         }
       })
-      .catch(function(err){ console.error("Network Error:", err); showMsg('Network error.','error'); })
+      .catch(function(err){ console.error("Auth Exception:", err); showMsg('Network error.','error'); })
       .finally(function(){ setLoading('resetBtn', false, 'Update Password →'); });
     };
 
