@@ -1237,7 +1237,7 @@
       clearMsg();
       var email = $('loginEmail').value.trim();
       var password  = $('loginPass').value;
-      if (!email || !pass) { showMsg('Please fill in all fields.', 'error'); return; }
+      if (!email || !password) { showMsg('Please fill in all fields.', 'error'); return; }
 
       if (!validateEmail(email)) {
         showMsg('Please enter a valid email address.', 'error');
