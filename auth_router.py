@@ -160,21 +160,21 @@ def db_create_user(email: str, name: str, password_hash: str) -> bool:
                 (cleaned_email, name.strip(), password_hash)
             )
         conn.close()
-
-        users = _load_users_json()
-        users[cleaned_email] = {
-            "email": cleaned_email,
-            "name": name.strip(),
-            "password": password_hash,
-            "created_at": datetime.utcnow().isoformat()
-        }
-        _save_users_json(users)
-        return True
     except pymysql.IntegrityError:
         raise HTTPException(status_code=409, detail="An account with this email address already exists.")
     except Exception as e:
-        print(f"[AUTH DB] Error creating user '{cleaned_email}' in MySQL: {e}")
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+        print(f"[AUTH DB] Error creating user '{cleaned_email}' in MySQL, falling back to JSON: {e}")
+
+    # Fallback to JSON if MySQL fails or after successful MySQL insert
+    users = _load_users_json()
+    users[cleaned_email] = {
+        "email": cleaned_email,
+        "name": name.strip(),
+        "password": password_hash,
+        "created_at": datetime.utcnow().isoformat()
+    }
+    _save_users_json(users)
+    return True
 
 
 def db_update_password(email: str, new_password_hash: str) -> bool:
@@ -185,15 +185,14 @@ def db_update_password(email: str, new_password_hash: str) -> bool:
         with conn.cursor() as cursor:
             cursor.execute("UPDATE users SET password = %s WHERE email = %s", (new_password_hash, cleaned_email))
         conn.close()
-
-        users = _load_users_json()
-        if cleaned_email in users:
-            users[cleaned_email]["password"] = new_password_hash
-            _save_users_json(users)
-        return True
     except Exception as e:
-        print(f"[AUTH DB] Error updating password for '{cleaned_email}' in MySQL: {e}")
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+        print(f"[AUTH DB] Error updating password for '{cleaned_email}' in MySQL, falling back to JSON: {e}")
+
+    users = _load_users_json()
+    if cleaned_email in users:
+        users[cleaned_email]["password"] = new_password_hash
+        _save_users_json(users)
+    return True
 
 
 def _gen_otp() -> str:
