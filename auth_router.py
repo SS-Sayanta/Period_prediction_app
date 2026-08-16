@@ -54,7 +54,7 @@ DB_NAME     = os.getenv("DB_NAME", "femcare_db")
 
 # ── Password Hashing & Router Initialization ─────────────────────────────────
 pwd_ctx  = CryptContext(schemes=["bcrypt"], deprecated="auto")
-router   = APIRouter(prefix="/auth", tags=["auth"])
+router   = APIRouter(tags=["auth"])
 
 # In-memory OTP store: { email: {otp, expires_at, purpose} }
 _otp_store: Dict[str, Dict[str, Any]] = {}
@@ -401,7 +401,7 @@ async def get_login_req(request: Request) -> LoginRequest:
     form = await request.form()
     return LoginRequest(email=str(form.get("email","")), password=str(form.get("password","")))
 
-@router.post("/register")
+@router.post("/auth/register")
 def register(req: RegisterRequest = Depends(get_register_req)):
     """Direct user registration endpoint wired to MySQL database with bcrypt hashing."""
     email = _validate_email_str(req.email)
@@ -423,7 +423,7 @@ def register(req: RegisterRequest = Depends(get_register_req)):
     return {"success": True, "token": token, "name": user_name, "email": email}
 
 
-@router.post("/send-otp")
+@router.post("/auth/send-otp")
 def send_otp(req: SendOTPRequest):
     """Generate & send a 6-digit OTP to the user's email after checking MySQL database."""
     email = _validate_email_str(req.email)
@@ -458,7 +458,7 @@ def send_otp(req: SendOTPRequest):
     }
 
 
-@router.post("/verify-otp")
+@router.post("/auth/verify-otp")
 def verify_otp(req: VerifyOTPRequest):
     """Verify OTP → create account in MySQL database (registration) or confirm identity (reset step 1)."""
     email = _validate_email_str(req.email)
@@ -493,7 +493,7 @@ def verify_otp(req: VerifyOTPRequest):
     return {"success": True, "message": "Identity verified. You may now set a new password."}
 
 
-@router.post("/login")
+@router.post("/auth/login")
 def login(req: LoginRequest = Depends(get_login_req)):
     """Verify user email & password against MySQL database and return JWT token."""
     email = _validate_email_str(req.email)
@@ -506,7 +506,7 @@ def login(req: LoginRequest = Depends(get_login_req)):
     return {"success": True, "token": token, "name": user["name"], "email": email}
 
 
-@router.post("/reset-password")
+@router.post("/auth/reset-password")
 def reset_password(req: ResetPasswordRequest):
     """Verify reset OTP + update password in MySQL database."""
     email = _validate_email_str(req.email)
@@ -542,7 +542,7 @@ def reset_password(req: ResetPasswordRequest):
     return {"success": True, "message": "Password updated successfully. You can now log in."}
 
 
-@router.get("/me")
+@router.get("/auth/me")
 def get_me(authorization: Optional[str] = Header(None)):
     """Fetch current authenticated user info from JWT token and MySQL database."""
     if not authorization or not authorization.startswith("Bearer "):
