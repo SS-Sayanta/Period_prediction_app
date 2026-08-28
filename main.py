@@ -82,57 +82,41 @@ async def login(request: Request):
         email = str(data.get("email", "")).strip().lower()
         password = str(data.get("password", "")).strip()
 
-        conn = get_db_connection()
-        # Use default cursor (might return tuple or dict depending on driver)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, email, name, password FROM users WHERE LOWER(TRIM(email)) = %s", (email,))
-        row = cursor.fetchone()
-        
-        user = None
-        if row:
-            if isinstance(row, tuple):
-                # Map tuple to dict (id, email, name, password)
-                user = {
-                    "id": row[0],
-                    "email": row[1],
-                    "name": row[2],
-                    "password": row[3],
-                    "password_hash": row[3]
-                }
-            else:
-                user = dict(row)
+        from auth_router import db_get_user, db_update_password, pwd_ctx, _make_jwt
+
+        # Use the centralized db handler which correctly checks MySQL AND JSON fallbacks
+        user = db_get_user(email)
 
         if not user:
             print(f"User not found in DB: {email}")
-            conn.close()
             return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
 
         stored_hash = user.get("password_hash") or user.get("password") or ""
         is_valid = False
         try:
-            is_valid = pwd_context.verify(password, stored_hash)
+            is_valid = pwd_ctx.verify(password, stored_hash)
         except Exception:
             is_valid = (password == stored_hash)
 
         # Fallback 2: Opportunistic password hash update
         if not is_valid or (is_valid and not stored_hash.startswith("$2b$")):
-            new_hash = pwd_context.hash(password)
+            new_hash = pwd_ctx.hash(password)
             try:
-                # Update using the same cursor
-                cursor.execute("UPDATE users SET password = %s WHERE id = %s", (new_hash, user["id"]))
+                db_update_password(email, new_hash)
                 is_valid = True
             except Exception as e:
                 print(f"Failed to update hash: {e}")
 
-        conn.close()
-
         if not is_valid:
             return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
+
+        # Make sure to generate the exact token expected by the frontend
+        token = _make_jwt(email, user.get("name", "User"))
 
         return {
             "status": "success",
             "message": "Login successful",
-            "token": "femcare_session_token",
+            "token": token,
             "user": {"email": email}
         }
     except Exception as e:
