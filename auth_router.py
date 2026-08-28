@@ -499,23 +499,34 @@ def verify_otp(req: VerifyOTPRequest):
 def login(req: LoginRequest = Depends(get_login_req)):
     """Verify user email & password against MySQL database and return JWT token."""
     try:
-        email = _validate_email_str(req.email)
+        email = req.email.strip().lower()
         user = db_get_user(email)
         
         if not user:
             return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
             
+        stored_password = user.get("password_hash") or user.get("password")
+        is_valid = False
         try:
-            is_valid = pwd_ctx.verify(req.password, user.get("password", ""))
+            is_valid = pwd_ctx.verify(req.password, stored_password)
         except Exception:
-            traceback.print_exc()
-            is_valid = False
+            # Fallback in case plain text or raw comparison was stored
+            is_valid = (req.password == stored_password)
             
         if not is_valid:
             return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
         
         token = _make_jwt(email, user.get("name", "User"))
-        return {"success": True, "token": token, "name": user.get("name", "User"), "email": email}
+        return JSONResponse(
+            status_code=200, 
+            content={
+                "status": "success", 
+                "message": "Login successful", 
+                "user": {"email": email},
+                "token": token,
+                "name": user.get("name", "User")
+            }
+        )
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"detail": "Internal server error during login."})

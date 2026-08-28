@@ -1258,7 +1258,8 @@
         });
       })
       .then(function(res) {
-        if (res.ok && res.d.success) {
+        if (res.ok) {
+          localStorage.setItem('user', JSON.stringify(res.d.user || res.d));
           saveSession(res.d.token, res.d.name, $('rememberMe').checked);
           revealApp(res.d.name);
         } else {
