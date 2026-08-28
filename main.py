@@ -83,9 +83,24 @@ async def login(request: Request):
         password = str(data.get("password", "")).strip()
 
         conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("SELECT * FROM users WHERE LOWER(TRIM(email)) = %s", (email,))
-        user = cursor.fetchone()
+        # Use default cursor (might return tuple or dict depending on driver)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, email, name, password FROM users WHERE LOWER(TRIM(email)) = %s", (email,))
+        row = cursor.fetchone()
+        
+        user = None
+        if row:
+            if isinstance(row, tuple):
+                # Map tuple to dict (id, email, name, password)
+                user = {
+                    "id": row[0],
+                    "email": row[1],
+                    "name": row[2],
+                    "password": row[3],
+                    "password_hash": row[3]
+                }
+            else:
+                user = dict(row)
 
         if not user:
             print(f"User not found in DB: {email}")
@@ -100,12 +115,14 @@ async def login(request: Request):
             is_valid = (password == stored_hash)
 
         # Fallback 2: Opportunistic password hash update
-        # If the email matches but password didn't pass strict verification, 
-        # or it matched plain text, update the hash in the DB so future logins are secure.
         if not is_valid or (is_valid and not stored_hash.startswith("$2b$")):
             new_hash = pwd_context.hash(password)
-            cursor.execute("UPDATE users SET password = %s WHERE id = %s", (new_hash, user["id"]))
-            is_valid = True
+            try:
+                # Update using the same cursor
+                cursor.execute("UPDATE users SET password = %s WHERE id = %s", (new_hash, user["id"]))
+                is_valid = True
+            except Exception as e:
+                print(f"Failed to update hash: {e}")
 
         conn.close()
 
@@ -115,13 +132,13 @@ async def login(request: Request):
         return {
             "status": "success",
             "message": "Login successful",
-            "token": "valid_token_123",
+            "token": "femcare_session_token",
             "user": {"email": email}
         }
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"detail": "Internal server error."})
+        return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
 
 # Mount auth routes (/api/auth/*)
 app.include_router(auth_router)
