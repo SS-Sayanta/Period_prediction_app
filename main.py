@@ -80,7 +80,7 @@ async def login(request: Request):
     try:
         data = await request.json()
         email = str(data.get("email", "")).strip().lower()
-        password = str(data.get("password", "")).strip()
+        password = str(data.get("password", ""))
 
         from auth_router import db_get_user, db_update_password, pwd_ctx, _make_jwt
 
