@@ -13,9 +13,12 @@ from pydantic import BaseModel, Field
 
 import pandas as pd
 import numpy as np
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import FastAPI, HTTPException, Query, Response, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from passlib.context import CryptContext
+import pymysql
 
 # Import domain modules
 from data_manager import (
@@ -57,6 +60,52 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Password Context and DB helper for auth
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_db_connection():
+    return pymysql.connect(
+        host=os.getenv("DB_HOST", "localhost"),
+        port=int(os.getenv("DB_PORT", "3306")),
+        user=os.getenv("DB_USER", "root"),
+        password=os.getenv("DB_PASSWORD", "password"),
+        database=os.getenv("DB_NAME", "femcare_db"),
+        autocommit=True,
+        ssl={"ssl_mode": "PREFERRED"}
+    )
+
+@app.post("/auth/login")
+async def login(request: Request):
+    try:
+        data = await request.json()
+        email = str(data.get("email", "")).strip().lower()
+        password = str(data.get("password", "")).strip()
+
+        conn = get_db_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("SELECT * FROM users WHERE LOWER(TRIM(email)) = %s", (email,))
+        user = cursor.fetchone()
+        conn.close()
+
+        if not user:
+            return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
+
+        stored_hash = user.get("password_hash") or user.get("password") or ""
+        is_valid = False
+        try:
+            is_valid = pwd_context.verify(password, stored_hash)
+        except Exception:
+            is_valid = (password == stored_hash)
+
+        if not is_valid:
+            return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
+
+        return {"status": "success", "token": "ok_token", "user": {"email": email}}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"detail": "Internal server error."})
 
 # Mount auth routes (/api/auth/*)
 app.include_router(auth_router)
