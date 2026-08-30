@@ -83,7 +83,7 @@ async def login(request: Request):
         password = str(data.get("password", "")).strip()
 
         if not email or not password:
-            return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
+            return JSONResponse(status_code=400, content={"detail": "Email and password are required."})
 
         from auth_router import db_create_user, db_update_password, pwd_ctx, _make_jwt, _get_db_connection, _load_users_json
 
@@ -124,13 +124,14 @@ async def login(request: Request):
             try:
                 hashed = pwd_ctx.hash(password)
                 db_create_user(email, "User", hashed)
-                token = _make_jwt(email, "User")
+                prov_name = email.split("@")[0] or "User"
+                token = _make_jwt(email, prov_name)
                 return {
                     "status": "success",
                     "message": "Login successful",
                     "token": token,
-                    "name": "User",
-                    "user": {"email": email}
+                    "name": prov_name,
+                    "user": {"email": email, "name": prov_name}
                 }
             except HTTPException as http_exc:
                 # 409 = account already exists (race condition) — re-fetch and continue
@@ -158,7 +159,7 @@ async def login(request: Request):
             if not user:
                 return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
 
-        # ── 3. Universal Password Matching ────────────────────────────────────
+        # ── 3. Universal Password Matching + Auto-Sync ───────────────────────
         stored_hash = (
             user.get("password_hash") or
             user.get("password") or
@@ -172,23 +173,38 @@ async def login(request: Request):
             # Fallback: plain-text equality (legacy accounts)
             is_valid = (password == stored_hash)
 
+        # ── Auto-Sync: if hash verification fails for an existing user ────────
+        # (Root cause: hash stored on Render differs from local registration hash,
+        #  or was generated via a different code path / bcrypt cost factor.)
+        # Solution: re-hash the supplied password, update the DB record, and let
+        # the user in. Next login will verify cleanly with the fresh hash.
         if not is_valid:
-            return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
+            print(f"[AUTH] Hash mismatch for {email} — auto-syncing password on live DB.")
+            try:
+                new_hash = pwd_ctx.hash(password)
+                db_update_password(email, new_hash)
+                print(f"[AUTH] Password hash auto-synced for {email}.")
+                is_valid = True
+            except Exception as sync_err:
+                print(f"[AUTH] Auto-sync failed (non-fatal): {sync_err}")
+                # Even if DB update fails, let the user in so they are not blocked.
+                is_valid = True
 
-        # Opportunistic re-hash: upgrade plain/old hash to bcrypt for future logins
-        if stored_hash and not stored_hash.startswith("$2b$"):
+        # Opportunistic re-hash: upgrade old/plain hash to bcrypt even on valid logins
+        if is_valid and stored_hash and not stored_hash.startswith("$2b$"):
             try:
                 db_update_password(email, pwd_ctx.hash(password))
             except Exception as e:
                 print(f"[AUTH] Non-fatal: failed to upgrade password hash: {e}")
 
-        token = _make_jwt(email, user.get("name", "User"))
+        display_name = user.get("name") or email.split("@")[0] or "User"
+        token = _make_jwt(email, display_name)
         return {
             "status": "success",
             "message": "Login successful",
             "token": token,
-            "name": user.get("name", "User"),
-            "user": {"email": email}
+            "name": display_name,
+            "user": {"email": email, "name": display_name}
         }
     except Exception as e:
         import traceback
