@@ -1123,12 +1123,7 @@
           📬 Check your <strong style="color:#f9a8d4;">Email Inbox &amp; Spam folder</strong> for the verification code.
         </div>
         
-        <div style="text-align:center; margin-top:12px;">
-          <p style="font-size:11px; color:#94a3b8; margin-bottom: 6px;">Default master verification code: 123456</p>
-          <button id="autofillOtpBtn" onclick="autofillOTP('otpGrid', 'verifyOTPBtn')" style="display:none; background:rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#f9a8d4; padding:6px 14px; border-radius:99px; font-size:12px; cursor:pointer; font-weight:600; align-items:center; justify-content:center; gap:6px; margin: 0 auto;">
-            ⚡ Click to Auto-Fill &amp; Instant Verify Code: <span></span>
-          </button>
-        </div>
+        <!-- Removed autofill block -->
 
         <button class="auth-btn-ghost" onclick="authShowView('register')" style="margin-top:10px">← Back</button>
       </div>
@@ -1175,12 +1170,7 @@
           📬 Check your <strong style="color:#f9a8d4;">Email Inbox &amp; Spam folder</strong> for the reset code.
         </div>
 
-        <div style="text-align:center; margin-top:12px;">
-          <p style="font-size:11px; color:#94a3b8; margin-bottom: 6px;">Default master verification code: 123456</p>
-          <button id="autofillResetOtpBtn" onclick="autofillOTP('resetOTPGrid', 'resetBtn')" style="display:none; background:rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#f9a8d4; padding:6px 14px; border-radius:99px; font-size:12px; cursor:pointer; font-weight:600; align-items:center; justify-content:center; gap:6px; margin: 0 auto;">
-            ⚡ Click to Auto-Fill &amp; Instant Verify Code: <span></span>
-          </button>
-        </div>
+        <!-- Removed autofill block -->
       </div>
 
       </div>
@@ -1194,7 +1184,6 @@
     var _pendingEmail = '';
     var _pendingName  = '';
     var _timerID = null;
-    var _devOTP  = '';
 
     /* ── Helpers ── */
     function $(id){ return document.getElementById(id); }
@@ -1342,17 +1331,6 @@
     }
 
     /* ═══════════════════ AUTH ACTIONS ═══════════════════ */
-    var _currentOtpHint = '';
-    window.autofillOTP = function(gridId, submitBtnId) {
-        if (!_currentOtpHint) return;
-        var inputs = $(gridId).querySelectorAll('.otp-box');
-        for (var i = 0; i < inputs.length && i < _currentOtpHint.length; i++) {
-            inputs[i].value = _currentOtpHint[i];
-        }
-        if (submitBtnId) {
-            setTimeout(function() { $(submitBtnId).click(); }, 100);
-        }
-    };
 
     /* LOGIN */
     window.authDoLogin = function() {
@@ -1434,21 +1412,8 @@
         });
       })
       .then(function(res) {
-        if (res.ok) {
+        if (res.ok && res.d.success) {
           showToast("OTP sent! Please check your Email Inbox or Spam folder.");
-          _devOTP = res.d.dev_otp || '';
-          _currentOtpHint = res.d.otp_code || res.d.otp_hint || '';
-          if (_devOTP) showMsg('DEV MODE — OTP: ' + _devOTP + ' (check server console)', 'info');
-          
-          var autofillBtn = $('autofillOtpBtn');
-          if (autofillBtn) {
-              autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
-              var span = autofillBtn.querySelector('span');
-              if (span) span.textContent = '[' + _currentOtpHint + ']';
-          }
-          if (_currentOtpHint) {
-              setTimeout(function() { if (autofillBtn && autofillBtn.style.display !== 'none') autofillBtn.click(); }, 1500);
-          }
           
           $('otpTargetLabel').textContent = 'Enter the 6-digit code sent to your email';
           $('otpEmailDisplay').textContent = email;
@@ -1457,7 +1422,7 @@
           startTimer('otpTimer', 'resendBtn', 120);
           $('otpGrid').querySelector('.otp-box').focus();
         } else {
-          showMsg(res.d.detail || 'Failed to send OTP.', 'error');
+          showMsg(res.d.message || res.d.detail || 'Failed to send OTP.', 'error');
         }
       })
       .catch(function(err){ console.error("Auth Exception:", err); showMsg('Network error.', 'error'); })
@@ -1473,23 +1438,13 @@
       })
       .then(function(r){ if(!r.ok) console.error("API Error: Status", r.status); return r.json(); })
       .then(function(d){
-        showToast("OTP sent! Please check your Email Inbox or Spam folder.");
-        _devOTP = d.dev_otp || '';
-        _currentOtpHint = d.otp_code || d.otp_hint || '';
-        
-        var autofillBtn = $('autofillOtpBtn');
-        if (autofillBtn) {
-            autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
-            var span = autofillBtn.querySelector('span');
-            if (span) span.textContent = '[' + _currentOtpHint + ']';
+        if (d.success) {
+          showToast("OTP sent! Please check your Email Inbox or Spam folder.");
+          showMsg('New OTP sent!', 'ok');
+          startTimer('otpTimer', 'resendBtn', 120);
+        } else {
+          showMsg(d.message || 'Failed to resend.', 'error');
         }
-        if (_currentOtpHint) {
-            setTimeout(function() { if (autofillBtn && autofillBtn.style.display !== 'none') autofillBtn.click(); }, 1500);
-        }
-        
-        if (_devOTP) showMsg('DEV — New OTP: ' + _devOTP, 'info');
-        else showMsg('New OTP sent!', 'ok');
-        startTimer('otpTimer', 'resendBtn', 120);
       })
       .catch(function(err){ console.error("Auth Exception:", err); showMsg('Failed to resend.','error'); });
     };
@@ -1553,30 +1508,17 @@
         });
       })
       .then(function(res) {
-        if (res.ok) {
+        if (res.ok && res.d.success) {
           showToast("OTP sent! Please check your Email Inbox or Spam folder.");
-          _devOTP = res.d.dev_otp || '';
-          _currentOtpHint = res.d.otp_code || res.d.otp_hint || '';
-          
-          var autofillBtn = $('autofillResetOtpBtn');
-          if (autofillBtn) {
-              autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
-              var span = autofillBtn.querySelector('span');
-              if (span) span.textContent = '[' + _currentOtpHint + ']';
-          }
-          if (_currentOtpHint) {
-              setTimeout(function() { if (autofillBtn && autofillBtn.style.display !== 'none') autofillBtn.click(); }, 1500);
-          }
           
           $('fpTargetLabel').textContent = 'Reset code sent to your email';
           $('fpEmailDisplay').textContent = email;
           clearOTP('resetOTPGrid');
-          if (_devOTP) showMsg('DEV — Reset OTP: ' + _devOTP, 'info');
           authShowView('resetOTP');
           startTimer('fpTimer', 'fpResendBtn', 120);
           $('resetOTPGrid').querySelector('.otp-box').focus();
         } else {
-          showMsg(res.d.detail || 'Failed to send reset code.', 'error');
+          showMsg(res.d.message || res.d.detail || 'Failed to send reset code.', 'error');
         }
       })
       .catch(function(err){ console.error("Auth Exception:", err); showMsg('Network error.','error'); })

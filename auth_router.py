@@ -130,8 +130,11 @@ def _load_users_json() -> Dict[str, Any]:
 
 
 def _save_users_json(users: Dict[str, Any]) -> None:
-    USERS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    USERS_FILE.write_text(json.dumps(users, indent=2, ensure_ascii=False), encoding="utf-8")
+    try:
+        USERS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        USERS_FILE.write_text(json.dumps(users, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception as e:
+        print(f"[AUTH] [WARNING] Could not save users.json (safe to ignore if using MySQL): {e}")
 
 
 def db_get_user(email: str) -> Optional[Dict[str, Any]]:
@@ -457,13 +460,15 @@ def send_otp(req: SendOTPRequest):
     subject = "🔐 FemCare AI — Your Verification Code"
     sent = _send_email(email, subject, _otp_email_html(otp, req.purpose))
 
-    print(f"\n====================\n[OTP DEBUG] Sent to {email}: {otp}\n====================\n")
+    if not sent:
+        return {
+            "success": False,
+            "message": "Unable to send verification code. Please try again."
+        }
 
     return {
-        "status": "success",
-        "message": "Verification code sent to your email.",
-        "otp_code": otp,
-        "email": email
+        "success": True,
+        "message": "Verification code sent to your email."
     }
 
 
@@ -479,7 +484,7 @@ def verify_otp(req: VerifyOTPRequest):
         _otp_store.pop(email, None)
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
     entered_otp = req.otp.strip()
-    if entered_otp != record["otp"] and entered_otp not in ["123456", "000000", "999999"]:
+    if entered_otp != record["otp"]:
         raise HTTPException(status_code=400, detail="Incorrect OTP. Please try again.")
 
     _otp_store.pop(email, None)  # consume OTP
@@ -564,7 +569,7 @@ def reset_password(req: ResetPasswordRequest):
             _otp_store.pop(email, None)
             raise HTTPException(status_code=400, detail="OTP has expired.")
         entered_otp = req.otp.strip()
-        if entered_otp != record["otp"] and entered_otp not in ["123456", "000000", "999999"]:
+        if entered_otp != record["otp"]:
             raise HTTPException(status_code=400, detail="Incorrect OTP.")
         _otp_store.pop(email, None)
 
