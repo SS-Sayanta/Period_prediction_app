@@ -1261,12 +1261,16 @@
       .then(function(res) {
         if (res.status === 200 && res.ok) {
           /* ── Successful authentication ── */
-          var token = res.d.token || '';
-          var name  = res.d.name  || (res.d.user && res.d.user.name) || 'User';
-          localStorage.setItem('user',     JSON.stringify(res.d.user || { email: email }));
-          localStorage.setItem('fc_token', token);
-          localStorage.setItem('fc_name',  name);
+          var token    = res.d.token || '';
+          var name     = res.d.name  || (res.d.user && res.d.user.name) || 'User';
+          var userObj  = res.d.user  || { email: email };
+          /* Write all session keys so every client path finds the session */
+          localStorage.setItem('femcare_user', JSON.stringify(userObj));
+          localStorage.setItem('user',         JSON.stringify(userObj));
+          localStorage.setItem('fc_token',     token);
+          localStorage.setItem('fc_name',      name);
           saveSession(token, name, $('rememberMe').checked);
+          /* Immediately hide auth overlay and show dashboard */
           revealApp(name);
         } else {
           showMsg(res.d.detail || 'Invalid email address or password.', 'error');

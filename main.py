@@ -117,14 +117,13 @@ async def login(request: Request):
                 print(f"[AUTH /auth/login] JSON fallback also failed: {json_err}")
 
         # ── 2. Cloud Auto-Provisioning ────────────────────────────────────────
-        # If user truly does not exist in the cloud DB (e.g., registered locally),
-        # auto-register them so subsequent logins succeed.
+        # If user truly does not exist in the cloud DB (e.g., registered locally
+        # or first login on Render), auto-register them so mobile logins succeed.
         if not user:
             print(f"[AUTH] Auto-provisioning new cloud account for: {email}")
             try:
                 hashed = pwd_ctx.hash(password)
                 db_create_user(email, "User", hashed)
-                # Return success immediately after provisioning
                 token = _make_jwt(email, "User")
                 return {
                     "status": "success",
@@ -133,8 +132,30 @@ async def login(request: Request):
                     "name": "User",
                     "user": {"email": email}
                 }
+            except HTTPException as http_exc:
+                # 409 = account already exists (race condition) — re-fetch and continue
+                if http_exc.status_code == 409:
+                    print(f"[AUTH] 409 on auto-provision — user exists, re-fetching: {email}")
+                    try:
+                        conn2 = _get_db_connection()
+                        with conn2.cursor() as cur2:
+                            cur2.execute(
+                                "SELECT id, email, name, password, created_at FROM users WHERE LOWER(TRIM(email)) = %s",
+                                (email,)
+                            )
+                            row2 = cur2.fetchone()
+                        conn2.close()
+                        if row2:
+                            user = row2 if isinstance(row2, dict) else dict(zip(["id","email","name","password","created_at"], row2))
+                    except Exception as re_fetch_err:
+                        print(f"[AUTH] Re-fetch after 409 failed: {re_fetch_err}")
+                else:
+                    print(f"[AUTH] Auto-provisioning HTTPException: {http_exc.detail}")
             except Exception as prov_err:
                 print(f"[AUTH] Auto-provisioning failed: {prov_err}")
+
+            # If still no user after all attempts, return 401
+            if not user:
                 return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
 
         # ── 3. Universal Password Matching ────────────────────────────────────
