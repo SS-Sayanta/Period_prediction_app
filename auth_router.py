@@ -243,39 +243,53 @@ def _send_email(to: str, subject: str, html_body: str) -> bool:
             f"{'='*55}\n"
         )
         return False
-    try:
+    def _try_send(port: int) -> bool:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"]    = f"FemCare AI <{SMTP_FROM}>"
         msg["To"]      = to
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-        if SMTP_PORT == 465:
-            with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=15) as s:
+        if port == 465:
+            with smtplib.SMTP_SSL(SMTP_SERVER, port, timeout=15) as s:
                 s.login(SENDER_EMAIL, SENDER_PASSWORD)
                 s.sendmail(SENDER_EMAIL, [to], msg.as_string())
         else:
-            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15) as s:
+            with smtplib.SMTP(SMTP_SERVER, port, timeout=15) as s:
                 s.ehlo()
                 s.starttls()
                 s.ehlo()
                 s.login(SENDER_EMAIL, SENDER_PASSWORD)
                 s.sendmail(SENDER_EMAIL, [to], msg.as_string())
-
-        print(f"[AUTH] [OK] Email sent successfully to {to}")
         return True
-    except smtplib.SMTPAuthenticationError:
+
+    try:
+        success = _try_send(SMTP_PORT)
+        print(f"[AUTH] [OK] Email sent successfully to {to} on port {SMTP_PORT}")
+        return success
+    except (smtplib.SMTPConnectError, TimeoutError, OSError) as e:
+        print(f"[AUTH] [WARNING] Network/Connection error on port {SMTP_PORT}: {e}")
+        fallback_port = 465 if SMTP_PORT == 587 else 587
+        print(f"[AUTH] [INFO] Attempting fallback to port {fallback_port}...")
+        try:
+            success = _try_send(fallback_port)
+            print(f"[AUTH] [OK] Email sent successfully to {to} on fallback port {fallback_port}")
+            return success
+        except Exception as fallback_e:
+            print(f"[AUTH] [ERROR] Fallback to port {fallback_port} also failed: {fallback_e}")
+            traceback.print_exc()
+            return False
+    except smtplib.SMTPAuthenticationError as e:
         print(
             f"[AUTH] [ERROR] Gmail authentication failed for '{SENDER_EMAIL}'.\n"
             f"  -> Make sure you are using a Gmail App Password, NOT your regular password.\n"
-            f"  -> Generate one at: https://myaccount.google.com/apppasswords"
+            f"  -> Generate one at: https://myaccount.google.com/apppasswords\n"
+            f"  -> Error details: {e}"
         )
         return False
-    except smtplib.SMTPConnectError:
-        print(f"[AUTH] [ERROR] Could not connect to {SMTP_SERVER}:{SMTP_PORT}. Check network or firewall.")
-        return False
     except Exception as e:
-        print(f"[AUTH] [ERROR] SMTP error: {type(e).__name__}: {e}")
+        print(f"[AUTH] [ERROR] SMTP error encountered while sending email to {to}:")
+        traceback.print_exc()
         return False
 
 
