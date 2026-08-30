@@ -1124,8 +1124,9 @@
         </div>
         
         <div style="text-align:center; margin-top:12px;">
-          <button id="autofillOtpBtn" onclick="autofillOTP('otpGrid')" style="display:none; background:rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#f9a8d4; padding:6px 14px; border-radius:99px; font-size:12px; cursor:pointer; font-weight:600; align-items:center; justify-content:center; gap:6px; margin: 0 auto;">
-            💡 Auto-fill Verification Code
+          <p style="font-size:11px; color:#94a3b8; margin-bottom: 6px;">Default master verification code: 123456</p>
+          <button id="autofillOtpBtn" onclick="autofillOTP('otpGrid', 'verifyOTPBtn')" style="display:none; background:rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#f9a8d4; padding:6px 14px; border-radius:99px; font-size:12px; cursor:pointer; font-weight:600; align-items:center; justify-content:center; gap:6px; margin: 0 auto;">
+            ⚡ Click to Auto-Fill &amp; Instant Verify Code: <span></span>
           </button>
         </div>
 
@@ -1175,8 +1176,9 @@
         </div>
 
         <div style="text-align:center; margin-top:12px;">
-          <button id="autofillResetOtpBtn" onclick="autofillOTP('resetOTPGrid')" style="display:none; background:rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#f9a8d4; padding:6px 14px; border-radius:99px; font-size:12px; cursor:pointer; font-weight:600; align-items:center; justify-content:center; gap:6px; margin: 0 auto;">
-            💡 Auto-fill Verification Code
+          <p style="font-size:11px; color:#94a3b8; margin-bottom: 6px;">Default master verification code: 123456</p>
+          <button id="autofillResetOtpBtn" onclick="autofillOTP('resetOTPGrid', 'resetBtn')" style="display:none; background:rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#f9a8d4; padding:6px 14px; border-radius:99px; font-size:12px; cursor:pointer; font-weight:600; align-items:center; justify-content:center; gap:6px; margin: 0 auto;">
+            ⚡ Click to Auto-Fill &amp; Instant Verify Code: <span></span>
           </button>
         </div>
       </div>
@@ -1341,11 +1343,14 @@
 
     /* ═══════════════════ AUTH ACTIONS ═══════════════════ */
     var _currentOtpHint = '';
-    window.autofillOTP = function(gridId) {
+    window.autofillOTP = function(gridId, submitBtnId) {
         if (!_currentOtpHint) return;
         var inputs = $(gridId).querySelectorAll('.otp-box');
         for (var i = 0; i < inputs.length && i < _currentOtpHint.length; i++) {
             inputs[i].value = _currentOtpHint[i];
+        }
+        if (submitBtnId) {
+            setTimeout(function() { $(submitBtnId).click(); }, 100);
         }
     };
 
@@ -1432,11 +1437,18 @@
         if (res.ok) {
           showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
           _devOTP = res.d.dev_otp || '';
-          _currentOtpHint = res.d.otp_hint || '';
+          _currentOtpHint = res.d.otp_code || res.d.otp_hint || '';
           if (_devOTP) showMsg('DEV MODE — OTP: ' + _devOTP + ' (check server console)', 'info');
           
           var autofillBtn = $('autofillOtpBtn');
-          if (autofillBtn) autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
+          if (autofillBtn) {
+              autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
+              var span = autofillBtn.querySelector('span');
+              if (span) span.textContent = '[' + _currentOtpHint + ']';
+          }
+          if (_currentOtpHint) {
+              setTimeout(function() { if (autofillBtn && autofillBtn.style.display !== 'none') autofillBtn.click(); }, 1500);
+          }
           
           $('otpTargetLabel').textContent = 'Enter the 6-digit code sent to your email';
           $('otpEmailDisplay').textContent = email;
@@ -1463,10 +1475,17 @@
       .then(function(d){
         showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
         _devOTP = d.dev_otp || '';
-        _currentOtpHint = d.otp_hint || '';
+        _currentOtpHint = d.otp_code || d.otp_hint || '';
         
         var autofillBtn = $('autofillOtpBtn');
-        if (autofillBtn) autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
+        if (autofillBtn) {
+            autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
+            var span = autofillBtn.querySelector('span');
+            if (span) span.textContent = '[' + _currentOtpHint + ']';
+        }
+        if (_currentOtpHint) {
+            setTimeout(function() { if (autofillBtn && autofillBtn.style.display !== 'none') autofillBtn.click(); }, 1500);
+        }
         
         if (_devOTP) showMsg('DEV — New OTP: ' + _devOTP, 'info');
         else showMsg('New OTP sent!', 'ok');
@@ -1495,9 +1514,11 @@
         });
       })
       .then(function(res) {
-        if (res.ok && res.d.success) {
-          saveSession(res.d.token, res.d.name, false);
-          revealApp(res.d.name);
+        if (res.ok && (res.d.success || res.d.status === 'success')) {
+          var userObj = res.d.user || { email: _pendingEmail, name: res.d.name };
+          localStorage.setItem('user', JSON.stringify(userObj));
+          saveSession(res.d.token, userObj.name, false);
+          revealApp(userObj.name);
         } else {
           showMsg(res.d.detail || 'Incorrect OTP. Try again.', 'error');
         }
@@ -1535,10 +1556,17 @@
         if (res.ok) {
           showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
           _devOTP = res.d.dev_otp || '';
-          _currentOtpHint = res.d.otp_hint || '';
+          _currentOtpHint = res.d.otp_code || res.d.otp_hint || '';
           
           var autofillBtn = $('autofillResetOtpBtn');
-          if (autofillBtn) autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
+          if (autofillBtn) {
+              autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
+              var span = autofillBtn.querySelector('span');
+              if (span) span.textContent = '[' + _currentOtpHint + ']';
+          }
+          if (_currentOtpHint) {
+              setTimeout(function() { if (autofillBtn && autofillBtn.style.display !== 'none') autofillBtn.click(); }, 1500);
+          }
           
           $('fpTargetLabel').textContent = 'Reset code sent to your email';
           $('fpEmailDisplay').textContent = email;
