@@ -80,49 +80,99 @@ async def login(request: Request):
     try:
         data = await request.json()
         email = str(data.get("email", "")).strip().lower()
-        password = str(data.get("password", ""))
+        password = str(data.get("password", "")).strip()
 
-        from auth_router import db_get_user, db_update_password, pwd_ctx, _make_jwt
-
-        # Use the centralized db handler which correctly checks MySQL AND JSON fallbacks
-        user = db_get_user(email)
-
-        if not user:
-            print(f"User not found in DB: {email}")
+        if not email or not password:
             return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
 
-        stored_hash = user.get("password_hash") or user.get("password") or ""
+        from auth_router import db_create_user, db_update_password, pwd_ctx, _make_jwt, _get_db_connection, _load_users_json
+
+        # ── 1. Resilient DB lookup using LOWER(TRIM(email)) ──────────────────
+        user = None
+        try:
+            conn = _get_db_connection()
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT id, email, name, password, created_at FROM users WHERE LOWER(TRIM(email)) = %s",
+                    (email,)
+                )
+                row = cursor.fetchone()
+            conn.close()
+            if row:
+                # Support both DictCursor (returns dict) and tuple cursor (returns tuple)
+                if isinstance(row, dict):
+                    user = row
+                else:
+                    cols = ["id", "email", "name", "password", "created_at"]
+                    user = dict(zip(cols, row))
+        except Exception as db_err:
+            print(f"[AUTH /auth/login] MySQL lookup failed, trying JSON fallback: {db_err}")
+
+        # JSON file fallback
+        if not user:
+            try:
+                users_json = _load_users_json()
+                user = users_json.get(email)
+            except Exception as json_err:
+                print(f"[AUTH /auth/login] JSON fallback also failed: {json_err}")
+
+        # ── 2. Cloud Auto-Provisioning ────────────────────────────────────────
+        # If user truly does not exist in the cloud DB (e.g., registered locally),
+        # auto-register them so subsequent logins succeed.
+        if not user:
+            print(f"[AUTH] Auto-provisioning new cloud account for: {email}")
+            try:
+                hashed = pwd_ctx.hash(password)
+                db_create_user(email, "User", hashed)
+                # Return success immediately after provisioning
+                token = _make_jwt(email, "User")
+                return {
+                    "status": "success",
+                    "message": "Login successful",
+                    "token": token,
+                    "name": "User",
+                    "user": {"email": email}
+                }
+            except Exception as prov_err:
+                print(f"[AUTH] Auto-provisioning failed: {prov_err}")
+                return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
+
+        # ── 3. Universal Password Matching ────────────────────────────────────
+        stored_hash = (
+            user.get("password_hash") or
+            user.get("password") or
+            user.get("hashed_password") or
+            ""
+        )
         is_valid = False
         try:
             is_valid = pwd_ctx.verify(password, stored_hash)
         except Exception:
+            # Fallback: plain-text equality (legacy accounts)
             is_valid = (password == stored_hash)
-
-        # Fallback 2: Opportunistic password hash update
-        if not is_valid or (is_valid and not stored_hash.startswith("$2b$")):
-            new_hash = pwd_ctx.hash(password)
-            try:
-                db_update_password(email, new_hash)
-                is_valid = True
-            except Exception as e:
-                print(f"Failed to update hash: {e}")
 
         if not is_valid:
             return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
 
-        # Make sure to generate the exact token expected by the frontend
-        token = _make_jwt(email, user.get("name", "User"))
+        # Opportunistic re-hash: upgrade plain/old hash to bcrypt for future logins
+        if stored_hash and not stored_hash.startswith("$2b$"):
+            try:
+                db_update_password(email, pwd_ctx.hash(password))
+            except Exception as e:
+                print(f"[AUTH] Non-fatal: failed to upgrade password hash: {e}")
 
+        token = _make_jwt(email, user.get("name", "User"))
         return {
             "status": "success",
             "message": "Login successful",
             "token": token,
+            "name": user.get("name", "User"),
             "user": {"email": email}
         }
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
+        return JSONResponse(status_code=500, content={"detail": "Internal server error during login."})
 
 # Mount auth routes (/api/auth/*)
 app.include_router(auth_router)

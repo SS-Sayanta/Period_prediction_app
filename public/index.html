@@ -1235,8 +1235,8 @@
     /* LOGIN */
     window.authDoLogin = function() {
       clearMsg();
-      var email = $('loginEmail').value.trim();
-      var password  = $('loginPass').value;
+      var email    = $('loginEmail').value.trim().toLowerCase();
+      var password = $('loginPass').value.trim();
       if (!email || !password) { showMsg('Please fill in all fields.', 'error'); return; }
 
       if (!validateEmail(email)) {
@@ -1246,27 +1246,36 @@
 
       setLoading('loginBtn', true, 'Signing in →');
       fetch('/auth/login', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: password })
       })
       .then(function(r) {
         return r.text().then(function(txt) {
           var d;
           try { d = JSON.parse(txt); } catch(e) { d = { detail: txt || r.statusText }; }
-          if (!r.ok) console.error("API Error: Status", r.status, d.detail);
-          return { ok: r.ok, d: d };
+          if (!r.ok) console.error('[Auth] Login failed — status', r.status, ':', d.detail || d);
+          return { status: r.status, ok: r.ok, d: d };
         });
       })
       .then(function(res) {
-        if (res.ok) {
-          localStorage.setItem('user', JSON.stringify(res.d.user || res.d));
-          saveSession(res.d.token, res.d.name, $('rememberMe').checked);
-          revealApp(res.d.name);
+        if (res.status === 200 && res.ok) {
+          /* ── Successful authentication ── */
+          var token = res.d.token || '';
+          var name  = res.d.name  || (res.d.user && res.d.user.name) || 'User';
+          localStorage.setItem('user',     JSON.stringify(res.d.user || { email: email }));
+          localStorage.setItem('fc_token', token);
+          localStorage.setItem('fc_name',  name);
+          saveSession(token, name, $('rememberMe').checked);
+          revealApp(name);
         } else {
-          showMsg(res.d.detail || 'Login failed. Please check your credentials.', 'error');
+          showMsg(res.d.detail || 'Invalid email address or password.', 'error');
         }
       })
-      .catch(function(err){ console.error("Auth Exception:", err); showMsg('Network error. Please try again.', 'error'); })
+      .catch(function(err){
+        console.error('[Auth] Network exception:', err);
+        showMsg('Network error. Please try again.', 'error');
+      })
       .finally(function(){ setLoading('loginBtn', false, 'Sign In →'); });
     };
 

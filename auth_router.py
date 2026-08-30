@@ -135,19 +135,28 @@ def _save_users_json(users: Dict[str, Any]) -> None:
 
 
 def db_get_user(email: str) -> Optional[Dict[str, Any]]:
-    """Retrieve user by email from MySQL users table."""
+    """Retrieve user by email from MySQL users table (case-insensitive + trim-safe)."""
     cleaned_email = email.lower().strip()
     try:
         conn = _get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT id, email, name, password, created_at FROM users WHERE email = %s", (cleaned_email,))
+            # Use LOWER(TRIM()) to match regardless of stored case/whitespace
+            cursor.execute(
+                "SELECT id, email, name, password, created_at FROM users WHERE LOWER(TRIM(email)) = %s",
+                (cleaned_email,)
+            )
             user = cursor.fetchone()
         conn.close()
         if user:
-            return user
+            # Normalise: DictCursor returns dict; tuple cursor returns tuple
+            if isinstance(user, dict):
+                return user
+            cols = ["id", "email", "name", "password", "created_at"]
+            return dict(zip(cols, user))
     except Exception as e:
         print(f"[AUTH DB] Error querying user '{cleaned_email}' from MySQL: {e}")
-    
+
+    # JSON file fallback (dev/offline)
     users = _load_users_json()
     return users.get(cleaned_email)
 
@@ -500,18 +509,19 @@ def login(req: LoginRequest = Depends(get_login_req)):
     """Verify user email & password against MySQL database and return JWT token."""
     try:
         email = req.email.strip().lower()
+        password = req.password.strip()
         user = db_get_user(email)
         
         if not user:
             return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
             
-        stored_password = user.get("password_hash") or user.get("password")
+        stored_password = user.get("password_hash") or user.get("password") or user.get("hashed_password") or ""
         is_valid = False
         try:
-            is_valid = pwd_ctx.verify(req.password, stored_password)
+            is_valid = pwd_ctx.verify(password, stored_password)
         except Exception:
             # Fallback in case plain text or raw comparison was stored
-            is_valid = (req.password == stored_password)
+            is_valid = (password == stored_password)
             
         if not is_valid:
             return JSONResponse(status_code=401, content={"detail": "Invalid email address or password."})
