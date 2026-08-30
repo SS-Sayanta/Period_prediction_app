@@ -780,6 +780,103 @@
       animation: glowPulse 2.5s ease-in-out infinite;
       overflow: hidden;
     }
+
+    /* ── AI Period Care Panel ─────────────────────────────────────────── */
+    .pc-glass {
+      background: linear-gradient(135deg, rgba(236,72,153,0.07) 0%, rgba(168,85,247,0.07) 100%);
+      border: 1px solid rgba(236,72,153,0.22);
+      border-radius: 18px;
+      padding: 22px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .pc-glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(236,72,153,0.04), rgba(168,85,247,0.04));
+      pointer-events: none;
+    }
+    .pc-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid rgba(236,72,153,0.35);
+      background: rgba(236,72,153,0.08);
+      color: #f9a8d4;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      user-select: none;
+    }
+    .pc-chip:hover   { background: rgba(236,72,153,0.18); border-color: rgba(236,72,153,0.6); }
+    .pc-chip.selected { background: rgba(236,72,153,0.28); border-color: #ec4899; color: #fff; box-shadow: 0 0 8px rgba(236,72,153,0.4); }
+    .pc-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 24px;
+      border-radius: 12px;
+      font-size: 14px; font-weight: 700;
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      color: #fff;
+      border: none; cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 18px rgba(236,72,153,0.35);
+    }
+    .pc-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(236,72,153,0.5); }
+    .pc-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .pc-hydro-row {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: rgba(96,165,250,0.06);
+      border: 1px solid rgba(96,165,250,0.18);
+      margin-bottom: 8px;
+      transition: background 0.15s;
+    }
+    .pc-hydro-row.checked { background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.25); }
+    .pc-hydro-check {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid rgba(96,165,250,0.5);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; margin-top: 2px;
+      transition: all 0.15s;
+    }
+    .pc-hydro-row.checked .pc-hydro-check { background: #22c55e; border-color: #22c55e; }
+    .pc-meal-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(236,72,153,0.15);
+      border-radius: 14px; padding: 14px 16px;
+    }
+    .pc-meal-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #ec4899; margin-bottom: 4px;
+    }
+    .pc-tip-badge {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(168,85,247,0.07);
+      border: 1px solid rgba(168,85,247,0.18);
+      font-size: 13px; color: #c4b5fd;
+      margin-bottom: 7px;
+    }
+    .pc-avoid-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 999px;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.25);
+      color: #fca5a5; font-size: 12px; font-weight: 600;
+      margin: 3px;
+    }
+    @keyframes pc-spin { to { transform: rotate(360deg); } }
+    .pc-spinner {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      animation: pc-spin 0.7s linear infinite;
+      display: inline-block;
+    }
   </style>
 </head>
 <body class="min-h-screen antialiased selection:bg-pink-500 selection:text-white">
@@ -1026,6 +1123,12 @@
           📬 Check your <strong style="color:#f9a8d4;">Email Inbox &amp; Spam folder</strong>, or copy the code directly from the <strong style="color:#c084fc;">VS Code Terminal</strong> for instant testing.
         </div>
         
+        <div style="text-align:center; margin-top:12px;">
+          <button id="autofillOtpBtn" onclick="autofillOTP('otpGrid')" style="display:none; background:rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#f9a8d4; padding:6px 14px; border-radius:99px; font-size:12px; cursor:pointer; font-weight:600; align-items:center; justify-content:center; gap:6px; margin: 0 auto;">
+            💡 Auto-fill Verification Code
+          </button>
+        </div>
+
         <button class="auth-btn-ghost" onclick="authShowView('register')" style="margin-top:10px">← Back</button>
       </div>
 
@@ -1069,6 +1172,12 @@
         <!-- Fallback Banner -->
         <div id="otpResetFallbackBanner" style="margin-top:18px; padding:12px 16px; border-radius:10px; font-size:11.5px; text-align:center; background:rgba(168,85,247,0.05); border:1px dashed rgba(236,72,153,0.3); color:#94a3b8; line-height:1.6;">
           📬 Check your <strong style="color:#f9a8d4;">Email Inbox &amp; Spam folder</strong>, or copy the code directly from the <strong style="color:#c084fc;">VS Code Terminal</strong> for instant testing.
+        </div>
+
+        <div style="text-align:center; margin-top:12px;">
+          <button id="autofillResetOtpBtn" onclick="autofillOTP('resetOTPGrid')" style="display:none; background:rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#f9a8d4; padding:6px 14px; border-radius:99px; font-size:12px; cursor:pointer; font-weight:600; align-items:center; justify-content:center; gap:6px; margin: 0 auto;">
+            💡 Auto-fill Verification Code
+          </button>
         </div>
       </div>
 
@@ -1231,6 +1340,14 @@
     }
 
     /* ═══════════════════ AUTH ACTIONS ═══════════════════ */
+    var _currentOtpHint = '';
+    window.autofillOTP = function(gridId) {
+        if (!_currentOtpHint) return;
+        var inputs = $(gridId).querySelectorAll('.otp-box');
+        for (var i = 0; i < inputs.length && i < _currentOtpHint.length; i++) {
+            inputs[i].value = _currentOtpHint[i];
+        }
+    };
 
     /* LOGIN */
     window.authDoLogin = function() {
@@ -1315,7 +1432,11 @@
         if (res.ok) {
           showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
           _devOTP = res.d.dev_otp || '';
+          _currentOtpHint = res.d.otp_hint || '';
           if (_devOTP) showMsg('DEV MODE — OTP: ' + _devOTP + ' (check server console)', 'info');
+          
+          var autofillBtn = $('autofillOtpBtn');
+          if (autofillBtn) autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
           
           $('otpTargetLabel').textContent = 'Enter the 6-digit code sent to your email';
           $('otpEmailDisplay').textContent = email;
@@ -1342,6 +1463,11 @@
       .then(function(d){
         showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
         _devOTP = d.dev_otp || '';
+        _currentOtpHint = d.otp_hint || '';
+        
+        var autofillBtn = $('autofillOtpBtn');
+        if (autofillBtn) autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
+        
         if (_devOTP) showMsg('DEV — New OTP: ' + _devOTP, 'info');
         else showMsg('New OTP sent!', 'ok');
         startTimer('otpTimer', 'resendBtn', 120);
@@ -1409,6 +1535,10 @@
         if (res.ok) {
           showToast("OTP sent! Please check your Email Inbox/Spam or VS Code Terminal for instant testing.");
           _devOTP = res.d.dev_otp || '';
+          _currentOtpHint = res.d.otp_hint || '';
+          
+          var autofillBtn = $('autofillResetOtpBtn');
+          if (autofillBtn) autofillBtn.style.display = _currentOtpHint ? 'inline-flex' : 'none';
           
           $('fpTargetLabel').textContent = 'Reset code sent to your email';
           $('fpEmailDisplay').textContent = email;
@@ -1996,6 +2126,12 @@
       const [chatMessages, setChatMessages] = useState([]);
       const chatEndRef = React.useRef(null);
 
+      // Prediction Chat State
+      const [predictionChatMessages, setPredictionChatMessages] = useState([]);
+      const [predictionChatInput, setPredictionChatInput] = useState('');
+      const [isPredictionChatLoading, setIsPredictionChatLoading] = useState(false);
+      const predictionChatEndRef = React.useRef(null);
+
       // Smart Product Recommender State
       const [recommenderQuery, setRecommenderQuery] = useState('');
       const [recommenderResult, setRecommenderResult] = useState(null);
@@ -2008,6 +2144,39 @@
           chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
       }, [chatMessages, isAssistantLoading]);
+
+      // Auto-scroll for prediction chat
+      useEffect(() => {
+        if (predictionChatEndRef.current) {
+          predictionChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, [predictionChatMessages, isPredictionChatLoading]);
+
+      const handlePredictionChat = async (queryText) => {
+        const q = (queryText || predictionChatInput).trim();
+        if (!q) return;
+        setPredictionChatInput('');
+        setPredictionChatMessages(prev => [...prev, { role: 'user', text: q }]);
+        setIsPredictionChatLoading(true);
+
+        try {
+          const res = await fetch('/api/prediction-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: q,
+              current_prediction: activeMLData || overviewData
+            })
+          });
+          const data = await res.json();
+          const reply = data.response || '❌ No response received.';
+          setPredictionChatMessages(prev => [...prev, { role: 'ai', text: reply }]);
+        } catch (err) {
+          setPredictionChatMessages(prev => [...prev, { role: 'ai', text: '❌ Failed to reach AI. Please check your connection.' }]);
+        } finally {
+          setIsPredictionChatLoading(false);
+        }
+      };
 
       const handleAssistantQuery = async (queryText) => {
         const q = (queryText || assistantQuery).trim();
@@ -2240,6 +2409,7 @@
                     { id: 'calendar', icon: '📅', label: t('navCalendar') },
                     { id: 'analytics', icon: '📊', label: t('navAnalytics') },
                     { id: 'recommender', icon: '🧴', label: t('navRecommender') },
+                    { id: 'period-care', icon: '🌸', label: 'AI Period Care' },
                     { id: 'symptoms', icon: '📝', label: t('navQuickLog') },
                     { id: 'export', icon: '📜', label: t('navExport') }
                   ].map(tab => (
@@ -2248,7 +2418,9 @@
                         activeTab === tab.id
                           ? tab.id === 'recommender'
                             ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
-                            : 'bg-pink-500/15 text-pink-400 border border-pink-500/30'
+                            : tab.id === 'period-care'
+                              ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                              : 'bg-pink-500/15 text-pink-400 border border-pink-500/30'
                           : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                       }`}>
                       <span>{tab.icon}</span> {tab.label}
@@ -2723,6 +2895,98 @@
                       )}
                     </div>
                   )}
+
+                  {/* Prediction Chat Companion */}
+                  {activeMLData && (
+                    <div className="mt-8 relative overflow-hidden rounded-[32px] border border-pink-500/20 bg-slate-900/40 backdrop-blur-2xl shadow-2xl flex flex-col h-[480px]">
+                      <div className="absolute top-0 right-0 w-72 h-72 bg-pink-500/10 rounded-full blur-[64px] pointer-events-none"></div>
+                      <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-500/10 rounded-full blur-[64px] pointer-events-none"></div>
+                      
+                      <div className="bg-slate-900/30 p-4 border-b border-white/5 flex items-center justify-between backdrop-blur-xl z-10">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center shadow-lg shadow-pink-500/20 border border-white/10">
+                            <span className="text-xl">✨</span>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2 font-display">
+                              FemCare AI Doctor
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] uppercase font-bold tracking-wider border border-emerald-500/20">Online</span>
+                            </h4>
+                            <p className="text-[11px] text-slate-400 font-medium">Clinical-grade predictive companion</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto p-5 space-y-4 chat-msg-box z-10 scroll-smooth">
+                        {predictionChatMessages.length === 0 && (
+                           <div className="flex flex-col items-center justify-center h-full text-center animate-slide-up mt-4">
+                             <div className="w-16 h-16 rounded-[24px] bg-pink-500/10 flex items-center justify-center mb-5 border border-pink-500/20 shadow-[0_0_20px_rgba(236,72,153,0.1)]">
+                               <span className="text-3xl">🩺</span>
+                             </div>
+                             <h5 className="text-base font-bold text-slate-200 mb-2 font-display">How can I help you today?</h5>
+                             <p className="text-xs text-slate-400 max-w-[280px] mb-8 leading-relaxed">Ask me anything about your cycle, cramps, diet, or health in English, বাংলা, or Banglish.</p>
+                             <div className="flex flex-wrap justify-center gap-2.5 max-w-[400px]">
+                               {["🌸 Can I get pregnant today?", "🩸 Next period delay tips", "🥑 Best diet for this phase", "💊 Heavy cramp relief"].map((pill, i) => (
+                                 <button key={i} onClick={() => handlePredictionChat(pill)} className="text-[11px] font-medium bg-slate-800/40 hover:bg-pink-500/15 border border-slate-700/50 hover:border-pink-500/40 text-slate-300 hover:text-pink-300 rounded-2xl px-4 py-2 transition-all duration-300 shadow-sm hover:shadow-[0_0_15px_rgba(236,72,153,0.15)] hover:-translate-y-0.5 backdrop-blur-sm">
+                                   {pill}
+                                 </button>
+                               ))}
+                             </div>
+                           </div>
+                        )}
+                        {predictionChatMessages.map((msg, i) => (
+                          <div key={i} className={`flex items-end gap-3 animate-slide-up ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            {msg.role === 'ai' && (
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white text-[11px] font-bold shrink-0 mb-1 shadow-md shadow-pink-500/20 border border-white/10">AI</div>
+                            )}
+                            {msg.role === 'user'
+                              ? <div className="bg-gradient-to-r from-pink-600 to-purple-600 text-white text-sm px-4 py-3 rounded-[20px] rounded-br-sm shadow-md max-w-[80%] font-medium leading-relaxed">{msg.text}</div>
+                              : <div className="bg-slate-800/60 backdrop-blur-md border border-white/5 text-slate-200 text-sm px-5 py-4 rounded-[20px] rounded-bl-sm shadow-md max-w-[85%] leading-relaxed chat-markdown" dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text) }} />
+                            }
+                            {msg.role === 'user' && (
+                              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-bold shrink-0 mb-1 border border-slate-700 shadow-sm">You</div>
+                            )}
+                          </div>
+                        ))}
+                        {isPredictionChatLoading && (
+                          <div className="flex items-end gap-3 justify-start animate-fade-in">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white text-[11px] font-bold shrink-0 mb-1 shadow-md shadow-pink-500/20 border border-white/10">AI</div>
+                            <div className="bg-slate-800/60 backdrop-blur-md border border-white/5 flex items-center gap-2.5 py-3.5 px-5 rounded-[20px] rounded-bl-sm shadow-md">
+                              <span className="text-[11px] text-slate-300 font-semibold tracking-wide">Analyzing</span>
+                              <div className="flex gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-bounce" style={{animationDelay:'0ms'}}></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-bounce" style={{animationDelay:'150ms'}}></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{animationDelay:'300ms'}}></span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div ref={predictionChatEndRef} />
+                      </div>
+                      
+                      <div className="p-3 bg-slate-900/40 border-t border-white/5 flex gap-2 backdrop-blur-xl z-10 m-2 rounded-[24px] mb-3">
+                        <div className="relative flex-1">
+                          <input 
+                            type="text" 
+                            className="w-full bg-slate-950/40 border border-white/10 focus:border-pink-500/50 rounded-full pl-5 pr-12 py-3.5 text-sm text-slate-200 focus:outline-none transition-all shadow-inner focus:shadow-[0_0_15px_rgba(236,72,153,0.15)] placeholder:text-slate-500"
+                            value={predictionChatInput}
+                            onChange={(e) => setPredictionChatInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && !isPredictionChatLoading) handlePredictionChat(); }}
+                            placeholder="Ask anything about your prediction..."
+                            disabled={isPredictionChatLoading}
+                          />
+                        </div>
+                        <button 
+                          onClick={() => handlePredictionChat()}
+                          disabled={isPredictionChatLoading || !predictionChatInput.trim()}
+                          className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white rounded-full w-12 flex items-center justify-center transition-all shadow-lg shadow-pink-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] hover:-translate-y-0.5 border border-white/10"
+                        >
+                          <svg className="w-5 h-5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               </div>
             )}
@@ -3355,6 +3619,218 @@
                 </div>
               </div>
             )}
+
+            {/* VIEW 7: AI ACTIVE PERIOD COMPANION */}
+            {activeTab === 'period-care' && (() => {
+              const CACHE_KEY = 'fc_period_care_' + new Date().toISOString().slice(0,10);
+              const [pcDate,     setPcDate]     = React.useState(() => new Date().toISOString().slice(0,10));
+              const [pcDay,      setPcDay]      = React.useState(1);
+              const [pcChips,    setPcChips]    = React.useState([]);
+              const [pcNotes,    setPcNotes]    = React.useState('');
+              const [pcLoading,  setPcLoading]  = React.useState(false);
+              const [pcPlan,     setPcPlan]     = React.useState(() => {
+                try { const c = localStorage.getItem(CACHE_KEY); return c ? JSON.parse(c) : null; } catch { return null; }
+              });
+              const [pcHydro,    setPcHydro]    = React.useState([]);
+              const [pcError,    setPcError]    = React.useState('');
+
+              const SYMPTOM_CHIPS = [
+                '🩸 Heavy Flow','😣 Severe Cramps','😞 Low Energy','😰 Mood Swings',
+                '🤢 Nausea','😴 Fatigue','💨 Bloating','🔵 Back Pain',
+                '🌡️ Fever / Chills','😵 Headache','😟 Anxiety','💤 Insomnia'
+              ];
+
+              const toggleChip = (chip) =>
+                setPcChips(prev => prev.includes(chip) ? prev.filter(c=>c!==chip) : [...prev, chip]);
+
+              const toggleHydro = (i) =>
+                setPcHydro(prev => prev.includes(i) ? prev.filter(x=>x!==i) : [...prev, i]);
+
+              const generatePlan = async (force=false) => {
+                if (!force && pcPlan) return;
+                setPcLoading(true); setPcError('');
+                try {
+                  const res = await fetch('/api/ai-period-care', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                      start_date: pcDate,
+                      current_day: pcDay,
+                      symptoms: pcChips.map(c => c.replace(/^[^a-zA-Z]+/, '').trim()),
+                      user_notes: pcNotes
+                    })
+                  });
+                  const data = await res.json();
+                  if (data.plan) {
+                    setPcPlan(data.plan);
+                    setPcHydro([]);
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(data.plan));
+                  } else { setPcError('AI returned an unexpected response. Please try again.'); }
+                } catch (err) {
+                  setPcError('Network error — please check your connection.');
+                  console.error('[PeriodCare]', err);
+                } finally { setPcLoading(false); }
+              };
+
+              /* Auto-load from cache on mount */
+              React.useEffect(() => { if (!pcPlan) generatePlan(); }, []);
+
+              const plan = pcPlan;
+              const hydrationPct = plan && plan.hydration_schedule
+                ? Math.round((pcHydro.length / plan.hydration_schedule.length) * 100) : 0;
+
+              return (
+                <div className="space-y-5">
+
+                  {/* ── Header ── */}
+                  <div className="pc-glass">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span style={{fontSize:'28px'}}>🌸</span>
+                      <div>
+                        <h2 style={{fontSize:'18px',fontWeight:800,color:'#f9a8d4',letterSpacing:'-0.3px'}}>AI Active Period Companion</h2>
+                        <p style={{fontSize:'12px',color:'#94a3b8',marginTop:'2px'}}>Personalised care plan powered by Groq · Llama-3.3-70B</p>
+                      </div>
+                      {plan && plan._fallback && (
+                        <span style={{marginLeft:'auto',fontSize:'10px',padding:'3px 10px',borderRadius:'999px',background:'rgba(251,191,36,0.1)',border:'1px solid rgba(251,191,36,0.3)',color:'#fbbf24',fontWeight:700}}>OFFLINE PLAN</span>
+                      )}
+                    </div>
+
+                    {/* Controls */}
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginTop:'16px'}}>
+                      <div>
+                        <label style={{fontSize:'11px',fontWeight:700,color:'#64748b',letterSpacing:'0.06em',textTransform:'uppercase',display:'block',marginBottom:'5px'}}>Period Start Date</label>
+                        <input type="date" value={pcDate}
+                          onChange={e => { setPcDate(e.target.value); const d=Math.ceil((new Date()-new Date(e.target.value))/(86400000))+1; setPcDay(Math.max(1,Math.min(d,35))); }}
+                          style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(236,72,153,0.3)',borderRadius:'10px',padding:'9px 12px',color:'#f1f5f9',fontSize:'13px',colorScheme:'dark'}}
+                        />
+                      </div>
+                      <div>
+                        <label style={{fontSize:'11px',fontWeight:700,color:'#64748b',letterSpacing:'0.06em',textTransform:'uppercase',display:'block',marginBottom:'5px'}}>Cycle Day</label>
+                        <input type="number" min="1" max="35" value={pcDay} onChange={e => setPcDay(parseInt(e.target.value)||1)}
+                          style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(236,72,153,0.3)',borderRadius:'10px',padding:'9px 12px',color:'#f1f5f9',fontSize:'13px'}}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Symptom chips */}
+                    <div style={{marginTop:'14px'}}>
+                      <label style={{fontSize:'11px',fontWeight:700,color:'#64748b',letterSpacing:'0.06em',textTransform:'uppercase',display:'block',marginBottom:'8px'}}>How are you feeling today?</label>
+                      <div style={{display:'flex',flexWrap:'wrap',gap:'7px'}}>
+                        {SYMPTOM_CHIPS.map(chip => (
+                          <span key={chip} className={'pc-chip' + (pcChips.includes(chip) ? ' selected' : '')} onClick={() => toggleChip(chip)}>{chip}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div style={{marginTop:'14px'}}>
+                      <label style={{fontSize:'11px',fontWeight:700,color:'#64748b',letterSpacing:'0.06em',textTransform:'uppercase',display:'block',marginBottom:'5px'}}>Additional Notes (optional)</label>
+                      <textarea value={pcNotes} onChange={e=>setPcNotes(e.target.value)} rows={2} placeholder="e.g. light spotting, using heat pad already..."
+                        style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(236,72,153,0.18)',borderRadius:'10px',padding:'9px 12px',color:'#f1f5f9',fontSize:'13px',resize:'none',boxSizing:'border-box'}}
+                      />
+                    </div>
+
+                    {/* Action buttons */}
+                    <div style={{display:'flex',gap:'10px',marginTop:'14px',flexWrap:'wrap'}}>
+                      <button className="pc-btn" disabled={pcLoading} onClick={() => generatePlan(true)}>
+                        {pcLoading ? <span className="pc-spinner" /> : '✨'}
+                        {pcLoading ? 'Generating Plan...' : (plan ? '🔄 Regenerate AI Care Plan' : '✨ Generate AI Care & Diet Plan')}
+                      </button>
+                      {plan && (
+                        <button onClick={() => { setPcPlan(null); localStorage.removeItem(CACHE_KEY); setPcHydro([]); }}
+                          style={{padding:'11px 16px',borderRadius:'12px',fontSize:'13px',fontWeight:600,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',color:'#94a3b8',cursor:'pointer'}}>
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    {pcError && <p style={{marginTop:'10px',fontSize:'12px',color:'#fca5a5',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',padding:'8px 12px'}}>{pcError}</p>}
+                  </div>
+
+                  {/* ── Plan output ── */}
+                  {plan && (
+                    <>
+                      {/* Cycle summary banner */}
+                      <div style={{background:'linear-gradient(135deg,rgba(236,72,153,0.15),rgba(168,85,247,0.12))',border:'1px solid rgba(236,72,153,0.3)',borderRadius:'14px',padding:'16px 20px',display:'flex',alignItems:'center',gap:'14px'}}>
+                        <span style={{fontSize:'28px'}}>💜</span>
+                        <div>
+                          <p style={{fontSize:'14px',fontWeight:700,color:'#f9a8d4'}}>{plan.cycle_summary}</p>
+                          <p style={{fontSize:'12px',color:'#94a3b8',marginTop:'3px'}}>Daily water target: <strong style={{color:'#60a5fa'}}>{plan.water_target}</strong></p>
+                        </div>
+                      </div>
+
+                      {/* Hydration timeline */}
+                      <div className="pc-glass">
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}}>
+                          <h3 style={{fontSize:'14px',fontWeight:800,color:'#93c5fd',display:'flex',alignItems:'center',gap:'7px'}}>💧 Hydration Timeline</h3>
+                          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                            <div style={{height:'6px',width:'80px',borderRadius:'999px',background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
+                              <div style={{height:'100%',width:hydrationPct+'%',background:'linear-gradient(90deg,#38bdf8,#22c55e)',borderRadius:'999px',transition:'width 0.4s ease'}} />
+                            </div>
+                            <span style={{fontSize:'11px',fontWeight:700,color:'#94a3b8'}}>{hydrationPct}%</span>
+                          </div>
+                        </div>
+                        {(plan.hydration_schedule||[]).map((item,i) => (
+                          <div key={i} className={'pc-hydro-row' + (pcHydro.includes(i) ? ' checked' : '')} onClick={() => toggleHydro(i)} style={{cursor:'pointer'}}>
+                            <div className="pc-hydro-check">
+                              {pcHydro.includes(i) && <span style={{fontSize:'11px',color:'#fff'}}>✓</span>}
+                            </div>
+                            <div style={{flex:1}}>
+                              <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+                                <span style={{fontSize:'12px',fontWeight:700,color:'#60a5fa'}}>{item.time}</span>
+                                <span style={{fontSize:'12px',fontWeight:700,color:'#f1f5f9'}}>{item.amount}</span>
+                                <span style={{fontSize:'12px',color:'#94a3b8'}}>·</span>
+                                <span style={{fontSize:'12px',color:'#c4b5fd'}}>{item.type}</span>
+                              </div>
+                              <p style={{fontSize:'11.5px',color:'#64748b',marginTop:'2px'}}>{item.benefit}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Diet plan */}
+                      <div className="pc-glass">
+                        <h3 style={{fontSize:'14px',fontWeight:800,color:'#86efac',display:'flex',alignItems:'center',gap:'7px',marginBottom:'14px'}}>🥗 Today's Personalised Diet Plan</h3>
+                        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:'10px'}}>
+                          {[
+                            {key:'breakfast',    icon:'🌅', label:'Breakfast'},
+                            {key:'lunch',        icon:'☀️', label:'Lunch'},
+                            {key:'evening_snack',icon:'🍫', label:'Evening Snack'},
+                            {key:'dinner',       icon:'🌙', label:'Dinner'},
+                          ].map(({key,icon,label}) => (
+                            <div key={key} className="pc-meal-card">
+                              <div className="pc-meal-label">{icon} {label}</div>
+                              <p style={{fontSize:'13px',color:'#f1f5f9',lineHeight:'1.55'}}>{(plan.diet_plan||{})[key] || '—'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Mood & cramp boosters */}
+                      <div className="pc-glass">
+                        <h3 style={{fontSize:'14px',fontWeight:800,color:'#c4b5fd',display:'flex',alignItems:'center',gap:'7px',marginBottom:'12px'}}>✨ Mood Elevator & Cramp Relief</h3>
+                        {(plan.mood_and_cramp_boosters||[]).map((tip,i) => (
+                          <div key={i} className="pc-tip-badge">
+                            <span style={{fontSize:'16px',marginTop:'1px'}}>{'🌿💆🧘'.split('')[i%3]}</span>
+                            <span>{tip}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Foods to avoid */}
+                      <div className="pc-glass">
+                        <h3 style={{fontSize:'14px',fontWeight:800,color:'#fca5a5',display:'flex',alignItems:'center',gap:'7px',marginBottom:'10px'}}>🚫 Foods to Avoid Today</h3>
+                        <div style={{display:'flex',flexWrap:'wrap',gap:'4px'}}>
+                          {(plan.foods_to_avoid_today||[]).map((f,i) => (
+                            <span key={i} className="pc-avoid-tag">⚠ {f}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                </div>
+              );
+            })()}
 
             {/* VIEW 6: DATASET & MEDICAL EXPORT */}
             {activeTab === 'export' && (

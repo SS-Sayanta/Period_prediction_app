@@ -279,46 +279,54 @@ def detect_language(text: str) -> str:
     return "english"
 
 
-# ── 6. Core GroqCloud API Call ────────────────────────────────────────────────
+# ── 6. Core GroqCloud API Call (multi-model fallback) ────────────────────────
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+]
+
 def _call_grok(system: str, user: str) -> Optional[str]:
     """
-    Low-level call to GroqCloud via OpenAI-compatible endpoint.
-    Returns response text or None. Logs every error to console.
+    Calls GroqCloud via OpenAI-compatible endpoint.
+    Tries GROQ_MODELS in order; returns the first successful response.
+    Returns None only when all models fail — never surfaces API error strings.
     """
     if _client is None:
-        print("[WARN] _call_grok: client not ready — set GROQ_API_KEY in .env.")
-        return None
-    try:
-        response = _client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user",   "content": user},
-            ],
-            temperature=0.7,
-        )
-        text = response.choices[0].message.content
-        if text:
-            print(f"[OK] Groq responded ({len(text)} chars)")
-            return text.strip()
-        print("[WARN] Groq returned empty content.")
+        print("[WARN] _call_grok: Groq client not ready. Set GROQ_API_KEY in .env.")
         return None
 
-    except AuthenticationError as exc:
-        print(f"[ERROR] Groq AuthenticationError — invalid API key: {exc}")
-    except RateLimitError as exc:
-        print(f"[ERROR] Groq RateLimitError — quota exceeded: {exc}")
-        return (
-            "⚠️ **Groq API Rate Limit Reached**\n\n"
-            "Your free-tier quota has been exceeded. Please check your plan at "
-            "https://console.groq.com or wait a moment before retrying."
-        )
-    except APIError as exc:
-        print(f"[ERROR] Groq APIError (status {exc.status_code}): {exc.message}")
-    except Exception as exc:
-        print(f"[ERROR] Unexpected error calling Groq: {exc}")
-        traceback.print_exc()
+    for model in GROQ_MODELS:
+        try:
+            response = _client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user",   "content": user},
+                ],
+                temperature=0.7,
+                max_tokens=1024,
+            )
+            text = response.choices[0].message.content
+            if text and text.strip():
+                print(f"[OK] Groq responded via {model} ({len(text)} chars)")
+                return text.strip()
+            print(f"[WARN] {model} returned empty content — trying next model.")
+        except AuthenticationError as exc:
+            print(f"[ERROR] Groq AuthenticationError on {model}: {exc}")
+            # Auth errors are fatal — no point trying other models with same key
+            return None
+        except RateLimitError as exc:
+            print(f"[WARN] Groq RateLimitError on {model}: {exc} — trying next model.")
+            continue  # try next model instead of surfacing the error
+        except APIError as exc:
+            print(f"[WARN] Groq APIError on {model} (status {exc.status_code}): {exc.message} — trying next.")
+            continue
+        except Exception as exc:
+            print(f"[WARN] Unexpected error on {model}: {exc} — trying next model.")
+            continue
 
+    print("[ERROR] All Groq models exhausted — returning None.")
     return None
 
 
@@ -356,63 +364,184 @@ def get_gemini_response(
     return _call_grok(system=SYSTEM_PROMPT, user=user_turn)
 
 
-# ── 8. Offline Fallback ───────────────────────────────────────────────────────
-def _offline_fallback(
+# ── 8. Smart Contextual Fallback (replaces the old "API key" notice) ─────────
+def _smart_fallback(
     query: str,
     current_phase: str,
     operating_mode: str,
 ) -> str:
     """
-    Shown ONLY when the Grok API is completely unreachable.
-    Language-aware; does NOT attempt to answer the specific question.
+    Generates a genuine, helpful, knowledge-base-driven answer when Groq is
+    unavailable. Never shows API error messages or 'Valid API key' prompts.
+    Reads the user's language and answers in the same language/script.
     """
     lang = detect_language(query)
     phase_info = PHASE_GUIDANCE.get(current_phase, PHASE_GUIDANCE["Follicular"])
-    mode_text = MODE_ADVICE.get(operating_mode, MODE_ADVICE["Cycle Tracking"])
+    q_lower = query.lower()
 
+    # ── Keyword-matched answers (covers the most common questions) ────────────
+    # Water / hydration
+    if any(k in q_lower for k in ["water", "jol", "paani", "hydrat", "litre", "liter", "পানি", "জল", "পানীয়"]):
+        if lang == "banglish":
+            return (
+                f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+                f"• {current_phase} phase-e protidin **2.5–3 litre** jol khaoa uchit.\n"
+                f"• Skaale warm lemon water cramps kom kore.\n"
+                f"• Ginger tea uterine tension-e khub helpful.\n"
+                f"• Caffeinated drinks kom rakhun — cramps bare.\n\n"
+                f"💡 *{phase_info['nutrition']}*"
+            )
+        if lang == "bengali_script":
+            return (
+                f"🌸 **ফেমকেয়ার AI** ({current_phase} পর্যায়):\n\n"
+                f"• {current_phase} পর্যায়ে প্রতিদিন **২.৫–৩ লিটার** পানি পান করুন।\n"
+                f"• সকালে উষ্ণ লেবু জল ক্র্যাম্প কমায়।\n"
+                f"• আদা চা জরায়ুর টান কমাতে সাহায্য করে।\n"
+                f"• ক্যাফেইন কমিয়ে রাখুন — ব্যথা বাড়ায়।\n\n"
+                f"💡 *{phase_info['nutrition']}*"
+            )
+        return (
+            f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+            f"• During the {current_phase} phase, aim for **2.5–3 litres** of water daily.\n"
+            f"• Warm lemon water in the morning helps reduce morning bloating and cramps.\n"
+            f"• Ginger or chamomile tea soothes uterine tension.\n"
+            f"• Limit caffeine — it amplifies cramps and disrupts sleep.\n\n"
+            f"💡 *Nutrition tip: {phase_info['nutrition']}*"
+        )
+
+    # Cramps / pain
+    if any(k in q_lower for k in ["cramp", "pain", "dard", "batha", "ব্যথা", "কষ্ট", "পেট"]):
+        if lang == "banglish":
+            return (
+                f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+                f"• **Heat pad** — lower abdomen-e 15-20 min heat apply korun, khub relief debe.\n"
+                f"• **Child's pose** stretch 5 min korle uterine tension kome.\n"
+                f"• Magnesium-rich khabar khao: dark chocolate, pumpkin seeds, spinach.\n"
+                f"• Ginger chamomile tea din-e 2 bar khao — natural anti-inflammatory.\n"
+                f"• Exercise: gentle yoga ba halka walking helpful.\n\n"
+                f"💡 *{phase_info['exercise']}*"
+            )
+        if lang == "bengali_script":
+            return (
+                f"🌸 **ফেমকেয়ার AI** ({current_phase} পর্যায়):\n\n"
+                f"• **হিট প্যাড** — পেটের নিচে ১৫-২০ মিনিট তাপ দিলে ক্র্যাম্প কমে।\n"
+                f"• **চাইল্ডস পোজ** স্ট্রেচ ৫ মিনিট জরায়ুর চাপ কমায়।\n"
+                f"• ম্যাগনেসিয়াম সমৃদ্ধ খাবার: ডার্ক চকলেট, কুমড়ার বীজ, পালং শাক।\n"
+                f"• আদা চা প্রাকৃতিক প্রদাহ-বিরোধী — দিনে ২ বার খান।\n\n"
+                f"💡 *{phase_info['exercise']}*"
+            )
+        return (
+            f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+            f"• **Heat pad** on lower abdomen for 15–20 minutes gives significant relief.\n"
+            f"• **Child's pose** stretch for 5 minutes reduces uterine tension.\n"
+            f"• Eat magnesium-rich foods: dark chocolate (70%+), pumpkin seeds, spinach.\n"
+            f"• Ginger chamomile tea — natural anti-inflammatory — 2 cups per day.\n"
+            f"• Light yoga or gentle walking is better than rest alone.\n\n"
+            f"💡 *Exercise tip: {phase_info['exercise']}*"
+        )
+
+    # Food / diet / nutrition / khabar
+    if any(k in q_lower for k in ["food", "eat", "diet", "khabar", "khabo", "khana", "nutrition", "খাবার", "খাওয়া", "meal"]):
+        if lang == "banglish":
+            return (
+                f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+                f"• **Breakfast:** Oats + banana + flaxseeds — iron & fibre.\n"
+                f"• **Lunch:** Daal + spinach + whole-grain roti — folate & magnesium.\n"
+                f"• **Snack:** Dark chocolate + pumpkin seeds — mood boost.\n"
+                f"• **Dinner:** Steamed fish/tofu + brown rice — light & sleep-friendly.\n"
+                f"• Avoid: high-sodium snacks, refined sugar, excess caffeine.\n\n"
+                f"💡 *{phase_info['nutrition']}*"
+            )
+        if lang == "bengali_script":
+            return (
+                f"🌸 **ফেমকেয়ার AI** ({current_phase} পর্যায়):\n\n"
+                f"• **সকাল:** ওটস + কলা + তিসি — আয়রন ও ফাইবার।\n"
+                f"• **দুপুর:** ডাল + পালং শাক + গমের রুটি — ফোলেট ও ম্যাগনেসিয়াম।\n"
+                f"• **স্ন্যাক:** ডার্ক চকলেট + কুমড়ার বীজ — মন ভালো করে।\n"
+                f"• **রাত:** স্টিমড মাছ/টফু + ব্রাউন রাইস — হালকা ও ঘুমের জন্য ভালো।\n"
+                f"• এড়িয়ে চলুন: বেশি লবণ, চিনি, ক্যাফেইন।\n\n"
+                f"💡 *{phase_info['nutrition']}*"
+            )
+        return (
+            f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+            f"• **Breakfast:** Oats with banana and flaxseeds — iron, fibre & omega-3.\n"
+            f"• **Lunch:** Lentil soup + spinach + whole-grain roti — folate & magnesium.\n"
+            f"• **Evening snack:** Dark chocolate (70%+) + pumpkin seeds — mood & magnesium.\n"
+            f"• **Dinner:** Steamed fish or tofu with sautéed greens + brown rice.\n"
+            f"• Avoid high-sodium snacks, refined sugar, excess caffeine.\n\n"
+            f"💡 *{phase_info['nutrition']}*"
+        )
+
+    # Exercise / yoga / workout
+    if any(k in q_lower for k in ["exercise", "yoga", "workout", "gym", "walk", "sport", "byayam", "ব্যায়াম"]):
+        if lang == "banglish":
+            return (
+                f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+                f"• {current_phase} phase-e: {phase_info['exercise']}\n"
+                f"• Period-er time: gentle yoga, child's pose, cat-cow stretch.\n"
+                f"• Heavy HIIT theke biro thakun jodi cramps thake.\n"
+                f"• 20-30 min halka walk endorphins release kore, pain kome."
+            )
+        return (
+            f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+            f"• {current_phase} phase recommendation: {phase_info['exercise']}\n"
+            f"• During your period: gentle yoga, child's pose, cat-cow stretches are ideal.\n"
+            f"• Avoid heavy HIIT if you have cramps — it amplifies pain.\n"
+            f"• A 20–30 minute light walk releases endorphins and reduces pain naturally."
+        )
+
+    # Mood / stress / anxiety / depression
+    if any(k in q_lower for k in ["mood", "stress", "anxiet", "depress", "sad", "emotional", "cry", "মন", "মেজাজ", "কান্না"]):
+        if lang == "banglish":
+            return (
+                f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+                f"• Period-er time mood swing hormonal — estrogen & progesterone drop-er karone hoy.\n"
+                f"• **Box breathing** (4-4-4-4) 10 minute korle cortisol kome.\n"
+                f"• Serotonin-er jonno complex carbs khao: sweet potato, oats, banana.\n"
+                f"• Sunlight-e 15 min thakun — vitamin D mood boost kore.\n"
+                f"• {phase_info['hormone_insight']}"
+            )
+        return (
+            f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
+            f"• Mood swings during your period are hormonal — caused by drops in estrogen & progesterone.\n"
+            f"• **Box breathing** (4 counts in, hold, out, hold) for 10 minutes lowers cortisol significantly.\n"
+            f"• Eat complex carbs to boost serotonin: sweet potato, oats, banana.\n"
+            f"• 15 minutes of sunlight boosts vitamin D and lifts mood naturally.\n"
+            f"• Hormonal insight: {phase_info['hormone_insight']}"
+        )
+
+    # ── Generic phase-aware answer for all other questions ───────────────────
     if lang == "banglish":
         return (
-            f"🌸 **FemCare AI (Offline — {current_phase} Phase):**\n\n"
-            "⚠️ *Grok AI connect hote parche na. GROK_API_KEY ta .env-e thik ache ki na check korun.*\n\n"
+            f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
             f"• **Hormonal Insight:** {phase_info['hormone_insight']}\n"
             f"• **Nutrition:** {phase_info['nutrition']}\n"
             f"• **Exercise:** {phase_info['exercise']}\n\n"
-            "💬 *Valid API key thakle apnar proshner direct uttor paben!*"
+            f"💡 Apnar specific proshner jonno AI-er sange connect thakun."
         )
     if lang == "bengali_script":
         return (
-            f"🌸 **ফেমকেয়ার AI (অফলাইন — {current_phase} পর্যায়):**\n\n"
-            "⚠️ *Grok AI সংযুক্ত হতে পারছে না। GROK_API_KEY যাচাই করুন।*\n\n"
+            f"🌸 **ফেমকেয়ার AI** ({current_phase} পর্যায়):\n\n"
             f"• **হরমোনাল তথ্য:** {phase_info['hormone_insight']}\n"
             f"• **পুষ্টি:** {phase_info['nutrition']}\n"
-            "💬 *সংযোগ ফিরলে আপনার প্রশ্নের সরাসরি উত্তর পাবেন!*"
+            f"• **ব্যায়াম:** {phase_info['exercise']}\n\n"
+            f"💡 আপনার নির্দিষ্ট প্রশ্নের জন্য আবার জিজ্ঞাসা করুন।"
         )
     if lang == "hindi_script":
         return (
-            f"🌸 **फेमकेयर AI (ऑफलाइन — {current_phase} चरण):**\n\n"
-            "⚠️ *Grok AI कनेक्ट नहीं हो पा रही। GROK_API_KEY जांचें।*\n\n"
+            f"🌸 **फेमकेयर AI** ({current_phase} चरण):\n\n"
             f"• **हार्मोनल जानकारी:** {phase_info['hormone_insight']}\n"
             f"• **पोषण:** {phase_info['nutrition']}\n"
-            "💬 *कनेक्शन होने पर आपके सवाल का सीधा जवाब मिलेगा!*"
+            f"• **व्यायाम:** {phase_info['exercise']}\n\n"
+            f"💡 कृपया अपना प्रश्न और विस्तार से पूछें।"
         )
-    if lang == "hinglish":
-        return (
-            f"🌸 **FemCare AI (Offline — {current_phase} Phase):**\n\n"
-            "⚠️ *Grok AI connect nahi ho pa rahi. GROK_API_KEY check karein.*\n\n"
-            f"• **Hormonal Insight:** {phase_info['hormone_insight']}\n"
-            f"• **Nutrition:** {phase_info['nutrition']}\n"
-            "💬 *Connection hone par seedha jawab milega!*"
-        )
-    # English default
+    # English
     return (
-        f"🌸 **FemCare AI (Offline — {current_phase} Phase):**\n\n"
-        "⚠️ *xAI Grok API is unreachable. Verify your GROK_API_KEY in .env.*\n"
-        "Get your key at: https://console.x.ai/\n\n"
+        f"🌸 **FemCare AI** ({current_phase} Phase):\n\n"
         f"• **Hormonal Insight:** {phase_info['hormone_insight']}\n"
         f"• **Nutrition:** {phase_info['nutrition']}\n"
-        f"• **Exercise:** {phase_info['exercise']}\n"
-        f"• **Mode Focus:** {mode_text}\n\n"
-        "💬 *Once reconnected, Grok will answer your specific question directly!*"
+        f"• **Exercise:** {phase_info['exercise']}\n\n"
+        f"💡 Feel free to ask a more specific question — I'm here to help!"
     )
 
 
@@ -426,8 +555,8 @@ def get_ai_assistant_response(
 ) -> str:
     """
     Primary entry point called by FastAPI routes /api/assistant and /api/chat.
-    1. Sends the exact user query to xAI Grok — no keyword interception.
-    2. Falls back to an offline notice only if the API is unreachable.
+    1. Sends the user query to GroqCloud (multi-model fallback).
+    2. If all Groq models fail, returns a smart KB-driven answer — never an API error string.
     """
     print(f"\n[CHAT] query='{query}' | phase={current_phase} | mode={operating_mode}")
 
@@ -442,8 +571,8 @@ def get_ai_assistant_response(
     if result:
         return result
 
-    print("[FALLBACK] Grok unavailable — serving offline message.")
-    return _offline_fallback(query, current_phase, operating_mode)
+    print("[FALLBACK] All Groq models failed — serving smart KB fallback.")
+    return _smart_fallback(query, current_phase, operating_mode)
 
 
 # ── 10. Rule-Based KB Matcher ──────────────────────────────────────────────────

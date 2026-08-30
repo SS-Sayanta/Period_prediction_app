@@ -46,6 +46,69 @@ from auth_router import router as auth_router
 init_and_clean_files()
 model_mgr = ModelManager.get_instance()
 
+def get_active_groq_models():
+    """Dynamically fetches active text completion models from Groq."""
+    import os
+    from openai import OpenAI
+    
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return ["llama-3.3-70b-specdec", "llama3-70b-8192", "llama3-8b-8192", "gemma2-9b-it"]
+        
+    try:
+        client = OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
+        models = client.models.list()
+        valid = []
+        for m in models.data:
+            m_id = m.id.lower()
+            if any(x in m_id for x in ["whisper", "vision", "embed", "audio"]):
+                continue
+            if any(x in m_id for x in ["llama", "deepseek", "mixtral", "qwen", "gemma"]):
+                valid.append(m.id)
+        
+        priority = ["llama-3.3-70b-versatile", "llama-3.3-70b-specdec", "llama3-70b-8192", "llama3-8b-8192", "gemma2-9b-it"]
+        valid.sort(key=lambda x: priority.index(x) if x in priority else 999)
+        return valid if valid else priority
+    except Exception as e:
+        print(f"[GROQ] Dynamic model fetch failed: {e}")
+        return ["llama-3.3-70b-specdec", "llama3-70b-8192", "llama3-8b-8192", "gemma2-9b-it"]
+
+ACTIVE_MODELS = get_active_groq_models()
+
+def generate_smart_fallback(query: str, phase: str) -> str:
+    q_lower = query.lower()
+    if any(k in q_lower for k in ["pad", "rash", "skin", "hygiene"]):
+        return f"🌸 **FemCare AI** ({phase} Phase):\n\n- **100% Organic Cotton Pads**: Great for sensitive skin.\n- **Menstrual Cups**: Excellent for heavy flow or active sports without friction.\n- Avoid scented or synthetic products to prevent irritation.\n⚠️ *Medical Note: Consult a gynecologist if you experience persistent rashes or severe pain.*"
+    elif any(k in q_lower for k in ["water", "drink", "hydrat", "fluid", "jol", "paani", "pani"]):
+        return f"🌸 **FemCare AI** ({phase} Phase):\n\n- Aim for **2.5–3 liters** of water daily.\n- Warm lemon water helps reduce morning bloating.\n- Ginger tea can soothe uterine tension."
+    elif any(k in q_lower for k in ["pain", "cramp", "hurt", "dard", "batha", "ache", "ব্যথা"]):
+        return f"🌸 **FemCare AI** ({phase} Phase):\n\n- Apply a **heat pad** to your lower abdomen for 15-20 minutes.\n- Try a 5-minute child's pose stretch.\n- Magnesium-rich foods like dark chocolate or pumpkin seeds can help naturally reduce cramping."
+    elif any(k in q_lower for k in ["food", "eat", "diet", "hungry", "khabar", "খাবার"]):
+        return f"🌸 **FemCare AI** ({phase} Phase):\n\n- Focus on iron-rich foods (spinach, lentils) and complex carbs (oats, sweet potato).\n- Vitamin C helps absorb iron better.\n- Avoid excess sodium and refined sugars to minimize bloating and mood crashes."
+    elif any(k in q_lower for k in ["mood", "sad", "cry", "stress", "anxiet"]):
+        return f"🌸 **FemCare AI** ({phase} Phase):\n\n- Mood fluctuations are completely normal and tied to hormonal shifts.\n- Try 10 minutes of deep box breathing to lower cortisol.\n- Gentle walking in the sun helps boost serotonin and vitamin D."
+    else:
+        return f"🌸 **FemCare AI** ({phase} Phase):\n\n- Remember that your body goes through natural changes across your cycle.\n- Keep track of any unusual symptoms.\n- Stay hydrated, get plenty of rest, and eat a balanced diet.\n⚠️ *If you have specific medical concerns, please consult a healthcare professional.*"
+
+BASE_SYSTEM_PROMPT = """You are FemCare AI Doctor — a warm, empathetic, and clinically sound women's health and cycle companion.
+
+CRITICAL RULE: STRICT SINGLE-LANGUAGE FIDELITY (NO LANGUAGE MIXING):
+- Analyze the user's input language and respond EXCLUSIVELY in that exact same language:
+  1. If the user writes in Bengali Script (বাংলা), respond 100% in natural, fluent, elegant Bengali (বাংলা লিপি).
+  2. If the user writes in Banglish (Bengali with English letters, e.g., 'amar pete betha korche ki korbo'):
+     - Respond strictly in authentic, natural Banglish (Bengali phonetics in English letters).
+     - NEVER use Hindi / Urdu / Hinglish words (e.g., DO NOT use words like 'pehle', 'kadha', 'kare', 'toh', 'gudghun', 'baher', 'rakha hai', 'dhyaan'). Use proper Bengali phrases like 'prothome', 'pet e betha', 'gorom jol er bottle / sek', 'bhalo kore bishram nin', 'beshi kore jol khan'.
+  3. If the user writes in English, reply 100% in clean, professional English.
+  4. If the user writes in Hindi, reply in natural Hindi.
+- Under NO circumstances mix Hindi words into Bengali/Banglish responses.
+- Structure your advice with clean markdown: clear bullet points, bold highlights, empathetic tone, and comforting medical clarity.
+
+CRITICAL RULE: NO THINKING OR REASONING OUTPUT:
+- NEVER output your "thinking process", "analysis", or internal thoughts before answering.
+- Provide ONLY the final, direct response to the user.
+- Do not use phrases like "Here's a thinking process:", "Analyze User Input:", or "Meaning:".
+- Start your response immediately with a warm, comforting greeting or direct answer."""
+
 app = FastAPI(
     title="FemCare AI Enterprise API",
     description="Vercel REST API for FemCare AI Enterprise React Application",
@@ -212,8 +275,69 @@ async def login(request: Request):
         return JSONResponse(status_code=500, content={"detail": "Internal server error during login."})
 
 # Mount auth routes (/api/auth/*)
-app.include_router(auth_router)
+class PredictionChatRequest(BaseModel):
+    message: str
+    current_prediction: Optional[Dict[str, Any]] = None
 
+
+@app.post("/api/prediction-chat")
+def prediction_chat(req: PredictionChatRequest):
+    """
+    AI Chatbot directly integrated into the Overview & Prediction section.
+    Automatically detects and responds in the exact language used by the user.
+    """
+    from assistant import _client as _groq_client
+    
+    context_str = "No prediction context provided."
+    if req.current_prediction:
+        context_str = f"Current Phase: {req.current_prediction.get('current_phase', 'Unknown')}\n"
+        context_str += f"Next Period: {req.current_prediction.get('next_period_date', 'Unknown')}\n"
+        context_str += f"Conception Probability: {req.current_prediction.get('conception_probability', 'Unknown')}\n"
+        
+    system_prompt = f"{BASE_SYSTEM_PROMPT}\n\nIncorporate the following user cycle prediction context if relevant:\n{context_str}"
+
+    if _groq_client is not None:
+        for model in ACTIVE_MODELS:
+            try:
+                resp = _groq_client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user",   "content": req.message},
+                    ],
+                    temperature=0.7,
+                    max_tokens=800,
+                )
+                text = resp.choices[0].message.content
+                if text and text.strip():
+                    return {"status": "success", "response": text.strip()}
+            except Exception as model_err:
+                print(f"[PREDICTION-CHAT] {model} failed: {model_err}")
+                
+        # Try fallback array if ACTIVE_MODELS failed
+        fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "llama-3.1-8b-instant", "qwen-2.5-32b"]
+        for model in fallback_models:
+            if model in ACTIVE_MODELS: continue
+            try:
+                resp = _groq_client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user",   "content": req.message},
+                    ],
+                    temperature=0.7,
+                    max_tokens=800,
+                )
+                text = resp.choices[0].message.content
+                if text and text.strip():
+                    return {"status": "success", "response": text.strip()}
+            except Exception:
+                pass
+                
+    fallback_text = generate_smart_fallback(req.message, req.current_prediction.get("current_phase", "Unknown") if req.current_prediction else "Unknown")
+    return {"status": "success", "response": fallback_text}
+
+app.include_router(auth_router)
 
 # ── Health / Readiness Probe ──────────────────────────────────────────────
 @app.get("/api/health")
@@ -228,6 +352,131 @@ def api_health():
 
 
 # ── Pydantic Request Models ────────────────────────────────────────────────
+
+class PeriodCareRequest(BaseModel):
+    start_date: str = Field(default_factory=lambda: date.today().isoformat())
+    current_day: int = 1
+    symptoms: List[str] = []
+    user_notes: str = ""
+
+
+# ── AI Period Care & Diet Endpoint ─────────────────────────────────────────
+@app.post("/api/ai-period-care")
+async def ai_period_care(req: PeriodCareRequest):
+    """
+    Generates a fully personalised daily period care + diet plan via GroqCloud.
+    Model: llama-3.3-70b-versatile (fallback: llama3-8b-8192).
+    Returns strict JSON schema with hydration schedule, diet plan, tips, avoids.
+    """
+    import json as _json
+    from assistant import _client as _groq_client
+
+    symptoms_str = ", ".join(req.symptoms) if req.symptoms else "general discomfort"
+    notes_str = f"\nAdditional user notes: {req.user_notes}" if req.user_notes.strip() else ""
+
+    PERIOD_CARE_SYSTEM = (
+        "You are an empathetic, clinical-level female health & nutrition AI coach for FemCare AI. "
+        "Based on the user's cycle day and symptoms, generate a structured, actionable, and comforting "
+        "care plan for today. You MUST respond with ONLY valid JSON — no markdown fences, no extra text. "
+        "Follow the schema exactly as given."
+    )
+
+    user_turn = (
+        f"Period start date: {req.start_date}\n"
+        f"Today is Day {req.current_day} of the cycle.\n"
+        f"Reported symptoms: {symptoms_str}.{notes_str}\n\n"
+        "Respond with ONLY this JSON (fill every field with specific, day-appropriate advice):\n"
+        "{\n"
+        '  "cycle_summary": "Short encouraging message mentioning day number",\n'
+        '  "water_target": "X.X Liters",\n'
+        '  "hydration_schedule": [\n'
+        '    {"time": "8:00 AM",  "amount": "500ml", "type": "Warm lemon water",            "benefit": "Reduces morning bloating"},\n'
+        '    {"time": "11:30 AM", "amount": "300ml", "type": "Coconut water / Electrolytes", "benefit": "Replaces lost minerals"},\n'
+        '    {"time": "2:30 PM",  "amount": "400ml", "type": "Pure water",                  "benefit": "Aids digestion"},\n'
+        '    {"time": "5:30 PM",  "amount": "300ml", "type": "Ginger chamomile tea",        "benefit": "Soothes uterine cramps"},\n'
+        '    {"time": "9:00 PM",  "amount": "300ml", "type": "Warm water",                  "benefit": "Eases night muscle tension"}\n'
+        '  ],\n'
+        '  "diet_plan": {\n'
+        '    "breakfast":     "Specific meal + why it helps today\'s symptoms",\n'
+        '    "lunch":         "Specific meal + why it helps today\'s symptoms",\n'
+        '    "evening_snack": "Mood-boosting snack (e.g. dark chocolate, pumpkin seeds)",\n'
+        '    "dinner":        "Light, magnesium-rich dinner for deep sleep"\n'
+        '  },\n'
+        '  "mood_and_cramp_boosters": [\n'
+        '    "Tip 1 (e.g. Child pose stretch 5 mins)",\n'
+        '    "Tip 2 (e.g. Heat pad at lower abdomen)",\n'
+        '    "Tip 3 (e.g. 10-minute mindfulness breathing)"\n'
+        '  ],\n'
+        '  "foods_to_avoid_today": ["High sodium foods", "Excess caffeine", "Refined sugary snacks"]\n'
+        "}"
+    )
+
+    # ── Try primary model, then fallback ─────────────────────────────────────
+    raw_text = None
+    for model in ACTIVE_MODELS:
+        if _groq_client is None:
+            break
+        try:
+            resp = _groq_client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": PERIOD_CARE_SYSTEM},
+                    {"role": "user",   "content": user_turn},
+                ],
+                temperature=0.65,
+                max_tokens=1200,
+            )
+            raw_text = resp.choices[0].message.content
+            if raw_text and raw_text.strip():
+                print(f"[AI-PERIOD-CARE] Got response from {model} ({len(raw_text)} chars)")
+                break
+        except Exception as model_err:
+            print(f"[AI-PERIOD-CARE] {model} failed: {model_err} — trying fallback")
+
+    # ── Parse JSON from AI response ──────────────────────────────────────────
+    plan = None
+    if raw_text:
+        try:
+            # Strip any accidental markdown fences
+            clean = raw_text.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+            plan = _json.loads(clean)
+        except Exception as parse_err:
+            print(f"[AI-PERIOD-CARE] JSON parse error: {parse_err} — using fallback plan")
+
+    # ── Hardcoded fallback (API down / parse fail) ───────────────────────────
+    if not plan:
+        plan = {
+            "cycle_summary": f"Day {req.current_day}: Rest, recover, and nourish yourself today. 💜",
+            "water_target": "2.8 Liters",
+            "hydration_schedule": [
+                {"time": "8:00 AM",  "amount": "500ml", "type": "Warm lemon water",             "benefit": "Reduces morning bloating"},
+                {"time": "11:30 AM", "amount": "300ml", "type": "Coconut water / Electrolytes",  "benefit": "Replaces lost minerals"},
+                {"time": "2:30 PM",  "amount": "400ml", "type": "Pure water",                   "benefit": "Aids digestion"},
+                {"time": "5:30 PM",  "amount": "300ml", "type": "Ginger chamomile tea",         "benefit": "Soothes uterine cramps"},
+                {"time": "9:00 PM",  "amount": "300ml", "type": "Warm water",                   "benefit": "Eases night muscle tension"},
+            ],
+            "diet_plan": {
+                "breakfast":     "Oats with banana and flaxseeds — iron + fibre to replenish lost nutrients",
+                "lunch":         "Lentil soup with spinach and whole-grain roti — iron, folate & magnesium",
+                "evening_snack": "Dark chocolate (70%+) + a handful of pumpkin seeds — magnesium & mood lift",
+                "dinner":        "Steamed fish or tofu with sautéed greens + brown rice — light, sleep-friendly",
+            },
+            "mood_and_cramp_boosters": [
+                "Child's pose stretch for 5 minutes — relieves lower back and uterine tension",
+                "Apply a heat pad to your lower abdomen for 15–20 minutes",
+                "10-minute box breathing (4-4-4-4) to calm the nervous system",
+            ],
+            "foods_to_avoid_today": [
+                "High sodium / processed snacks — worsen bloating",
+                "Excess caffeine — amplifies cramps and disrupts sleep",
+                "Refined sugary foods — spike and crash mood",
+            ],
+            "_fallback": True,
+        }
+
+    return {"status": "success", "day": req.current_day, "symptoms": req.symptoms, "plan": plan}
+
+
 class PredictRequest(BaseModel):
     user_name: str = "Valued User"
     user_id: Optional[str] = None
@@ -617,15 +866,60 @@ def get_analytics():
 # 5. AI Assistant Endpoint (/api/assistant and /api/chat)
 @app.post("/api/assistant")
 @app.post("/api/chat")
-def chat_assistant(req: AssistantRequest):
-    answer = get_ai_assistant_response(
-        query=req.query,
-        current_phase=req.current_phase,
-        operating_mode=req.operating_mode,
-        age=req.age,
-        stress_level=req.stress_level
+async def chat_assistant(req: AssistantRequest):
+    """
+    Routes the user query through GroqCloud (multi-model fallback).
+    Falls back to the smart KB-driven answer if all models fail.
+    Never surfaces API error messages to the frontend.
+    """
+    from assistant import _client as _groq_client, detect_language
+
+    lang = detect_language(req.query)
+    lang_labels = {
+        "bengali_script": "Bengali Script (বাংলা)",
+        "hindi_script":   "Hindi Script (हिंदी)",
+        "banglish":       "Banglish (Latin Script Bengali)",
+        "hinglish":       "Hinglish (Latin Script Hindi)",
+        "english":        "English",
+    }
+    target_lang = lang_labels.get(lang, "English")
+
+    user_turn = (
+        f"[Clinical Context]\n"
+        f"- Target Language & Script: {target_lang}\n"
+        f"- Cycle Phase: {req.current_phase}\n"
+        f"- Operating Mode: {req.operating_mode}\n"
+        f"- User Age: {req.age}\n"
+        f"- Stress Level: {req.stress_level}/5\n\n"
+        f"User question: {req.query}"
     )
-    return {"query": req.query, "response": answer, "answer": answer}
+
+    SYSTEM_PROMPT = BASE_SYSTEM_PROMPT
+
+    if _groq_client is not None:
+        for model in ACTIVE_MODELS:
+            try:
+                resp = _groq_client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user",   "content": user_turn},
+                    ],
+                    temperature=0.7,
+                    max_tokens=1024,
+                )
+                text = resp.choices[0].message.content
+                if text and text.strip():
+                    print(f"[CHAT-ENDPOINT] {model} responded ({len(text)} chars)")
+                    return {"response": text.strip()}
+                print(f"[CHAT-ENDPOINT] {model} returned empty — trying next.")
+            except Exception as model_err:
+                print(f"[CHAT-ENDPOINT] {model} failed: {model_err} — trying next.")
+    else:
+        print("[CHAT-ENDPOINT] Groq client not initialised.")
+
+    fallback_text = generate_smart_fallback(req.query, req.current_phase)
+    return {"response": fallback_text}
 
 
 # 6. Smart Product Recommender Endpoint (/api/recommend-product)
@@ -635,13 +929,55 @@ def recommend_product(req: ProductRecommendRequest):
     Returns a structured, grounded sanitary product recommendation.
     Combines fast KB rule-matching with Groq/Llama-3 AI enrichment.
     """
-    result = get_product_recommendation(
-        concern=req.concern,
-        current_phase=req.current_phase,
-        age=req.age,
-        lang=req.lang or "en",
+    from assistant import _client as _groq_client, detect_language
+    
+    lang = req.lang or detect_language(req.concern)
+    lang_labels = {
+        "bengali_script": "Bengali Script (বাংলা)",
+        "hindi_script":   "Hindi Script (हिंदी)",
+        "banglish":       "Banglish (Latin Script Bengali)",
+        "hinglish":       "Hinglish (Latin Script Hindi)",
+        "english":        "English",
+    }
+    target_lang = lang_labels.get(lang, "English")
+
+    user_turn = (
+        f"[Sanitary Product Recommender]\n"
+        f"User concern: {req.concern}\n"
+        f"Target Language & Script: {target_lang}\n"
+        f"Current cycle phase: {req.current_phase}\n"
+        f"User age: {req.age}\n\n"
+        f"STRICT INSTRUCTION: Write a warm, empathetic 3-4 bullet point recommendation strictly in {target_lang}. "
+        f"Explain WHY each recommended product helps this specific concern. "
+        f"End with a medical disclaimer note in {target_lang}. Be concise and use markdown formatting."
     )
-    return result
+
+    SYSTEM_PROMPT = BASE_SYSTEM_PROMPT
+
+    if _groq_client is not None:
+        for model in ACTIVE_MODELS:
+            try:
+                resp = _groq_client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user",   "content": user_turn},
+                    ],
+                    temperature=0.7,
+                    max_tokens=1024,
+                )
+                text = resp.choices[0].message.content
+                if text and text.strip():
+                    print(f"[RECOMMEND-ENDPOINT] {model} responded ({len(text)} chars)")
+                    return {"response": text.strip(), "ai_response": text.strip()}
+                print(f"[RECOMMEND-ENDPOINT] {model} returned empty — trying next.")
+            except Exception as model_err:
+                print(f"[RECOMMEND-ENDPOINT] {model} failed: {model_err} — trying next.")
+    else:
+        print("[RECOMMEND-ENDPOINT] Groq client not initialised.")
+
+    fallback_text = generate_smart_fallback(req.concern, req.current_phase)
+    return {"response": fallback_text, "ai_response": fallback_text}
 
 
 # 6. PDF Export Endpoint (/api/export-pdf)
