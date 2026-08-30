@@ -38,14 +38,14 @@ JWT_SECRET   = os.getenv("JWT_SECRET", secrets.token_hex(32))
 JWT_ALG      = "HS256"
 JWT_EXPIRE_H = 720          # 30 days
 
-SMTP_SERVER     = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_SERVER     = os.getenv("SMTP_HOST", os.getenv("SMTP_SERVER", "smtp.gmail.com")).strip()
 SMTP_PORT       = int(os.getenv("SMTP_PORT", "587"))
 SENDER_EMAIL    = os.getenv("SMTP_USER", os.getenv("SMTP_EMAIL", os.getenv("SENDER_EMAIL", ""))).strip()
 SENDER_PASSWORD = os.getenv("SMTP_PASSWORD", os.getenv("SMTP_APP_PASSWORD", os.getenv("SENDER_PASSWORD", ""))).strip()
 SMTP_FROM       = os.getenv("SMTP_FROM", SENDER_EMAIL or "noreply@femcare.ai")
 
 USERS_FILE   = Path("data/users.json")
-OTP_TTL_S    = 120          # OTP expires after 2 minutes
+OTP_TTL_S    = 600          # OTP expires after 10 minutes
 
 # ── MySQL Credentials ────────────────────────────────────────────────────────
 DB_HOST     = os.getenv("DB_HOST", "localhost")
@@ -318,7 +318,7 @@ def _otp_email_html(otp: str, purpose: str = "registration") -> str:
             </h2>
             <p style="color:#94a3b8;font-size:14px;margin:0 0 32px;line-height:1.6;">
               Use the code below to {action_desc}.<br>
-              This code is valid for <strong style="color:#c084fc;">2 minutes</strong>.
+              This code is valid for <strong style="color:#c084fc;">10 minutes</strong>.
             </p>
 
             <div style="margin:0 auto 28px;display:inline-block;">
@@ -461,7 +461,7 @@ def send_otp(req: SendOTPRequest):
 
     return {
         "status": "success",
-        "message": "Verification code generated successfully.",
+        "message": "Verification code sent to your email.",
         "otp_code": otp,
         "email": email
     }
